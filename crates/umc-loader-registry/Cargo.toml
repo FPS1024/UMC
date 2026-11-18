@@ -1,0 +1,14 @@
+[package]
+name = "umc-loader-registry"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+umc-loader-api.workspace = true
+umc-loader-fabric.workspace = true
+umc-loader-forge.workspace = true
+umc-loader-neoforge.workspace = true

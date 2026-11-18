@@ -24,11 +24,12 @@ Rust crate versions and the JSON-RPC protocol version evolve independently.
 
 Before creating a public release:
 
-1. Document third-party notices for bundled dependencies and Mojang assets.
+1. Document third-party licenses for bundled Rust dependencies. UMC release archives currently contain the UMC binaries and documentation, not Minecraft game assets; game files and runtimes are fetched by the user at runtime. Keep it that way unless distribution rights are reviewed.
 2. Review the RPC v1 contract, error mappings, and instance migration policy for the release.
 3. Keep Linux install, daemon permissions, reconnect, launch, stop, and vanilla install behavior validated on a native runner.
-4. Add signing only after release key ownership and storage are defined.
-5. Re-enable Windows and macOS CI/runtime validation when those ports are scheduled.
+4. Include the project non-affiliation notice in release descriptions and keep license/third-party notices with the artifacts.
+5. Add signing only after release key ownership and storage are defined.
+6. Re-enable Windows and macOS CI/runtime validation when those ports are scheduled.
 
 ## License
 

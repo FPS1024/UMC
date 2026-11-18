@@ -8,6 +8,8 @@ use umc_api::{
     CreateInstanceRequest, InstallRequest, JavaRuntimeInstallRequest, RpcError, RpcRequest,
     RpcResponse, UMC_API_VERSION, VersionManifest,
 };
+use umc_loader_api::{LoaderId, LoaderInstallRequest};
+use umc_loader_registry::LoaderRegistry;
 mod daemon;
 mod engine;
 mod tasks;
@@ -19,15 +21,24 @@ pub async fn serve_local_daemon(core: UmcCore) -> std::io::Result<()> {
 
 const MANIFEST_URL: &str = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
+fn parse_loader_id(value: Option<&str>) -> Option<LoaderId> {
+    LoaderId::new(value?).ok()
+}
+
 #[derive(Clone)]
 pub struct UmcCore {
     data_dir: PathBuf,
     instance_locks: Arc<Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>>,
     tasks: TaskManager,
+    loaders: LoaderRegistry,
 }
 
 impl UmcCore {
     pub fn new(data_dir: impl Into<PathBuf>) -> Self {
+        Self::with_loaders(data_dir, LoaderRegistry::new())
+    }
+
+    pub fn with_loaders(data_dir: impl Into<PathBuf>, loaders: LoaderRegistry) -> Self {
         let requested = data_dir.into();
         let data_dir = if requested.is_absolute() {
             requested
@@ -38,6 +49,7 @@ impl UmcCore {
         };
         Self {
             tasks: TaskManager::new(data_dir.clone()),
+            loaders,
             data_dir,
             instance_locks: Arc::new(Mutex::new(HashMap::new())),
         }
@@ -81,8 +93,56 @@ impl UmcCore {
                 serde_json::json!({"name":"UMC","version":env!("CARGO_PKG_VERSION"),"api_versions":[UMC_API_VERSION]}),
             ),
             "system.capabilities" => Ok(
-                serde_json::json!({"capabilities":["system","version.list","instance.create","instance.list","instance.get","instance.remove","instance.repair","instance.install","java.detect","java.runtime.list","java.runtime.install","java.runtime.remove","launch.offline","process.list","process.status","process.stop","task.get","task.cancel","task.events","rpc.stdio","rpc.local_daemon"]}),
+                serde_json::json!({"capabilities":["system","version.list","instance.create","instance.list","instance.get","instance.remove","instance.repair","instance.install","loader.list","loader.versions","loader.plan","java.detect","java.runtime.list","java.runtime.install","java.runtime.remove","launch.offline","process.list","process.status","process.stop","task.get","task.cancel","task.events","rpc.stdio","rpc.local_daemon"]}),
             ),
+            "loader.list" => {
+                serde_json::to_value(self.loaders.available()).map_err(|e| (-32001, e.to_string()))
+            }
+            "loader.versions" => {
+                let loader =
+                    parse_loader_id(req.params.get("loader").and_then(serde_json::Value::as_str));
+                let minecraft_version = req
+                    .params
+                    .get("minecraft_version")
+                    .and_then(serde_json::Value::as_str);
+                match (loader, minecraft_version) {
+                    (Some(loader), Some(version)) => match self.loaders.get(&loader) {
+                        Some(adapter) => adapter
+                            .list_versions(version)
+                            .await
+                            .and_then(|versions| {
+                                serde_json::to_value(versions).map_err(|e| e.to_string())
+                            })
+                            .map_err(|e| (-32005, e)),
+                        None => Err((-32012, format!("Loader adapter {loader:?} is unavailable"))),
+                    },
+                    (None, _) => Err((
+                        -32602,
+                        "loader must be a valid registered provider id".into(),
+                    )),
+                    (_, None) => Err((-32602, "minecraft_version is required".into())),
+                }
+            }
+            "loader.plan" => {
+                let loader =
+                    parse_loader_id(req.params.get("loader").and_then(serde_json::Value::as_str));
+                let parsed = serde_json::from_value::<LoaderInstallRequest>(req.params.clone());
+                match (loader, parsed) {
+                    (Some(loader), Ok(request)) => match self.loaders.get(&loader) {
+                        Some(adapter) => adapter
+                            .plan_install(request)
+                            .await
+                            .and_then(|plan| serde_json::to_value(plan).map_err(|e| e.to_string()))
+                            .map_err(|e| (-32005, e)),
+                        None => Err((-32012, format!("Loader adapter {loader:?} is unavailable"))),
+                    },
+                    (None, _) => Err((
+                        -32602,
+                        "loader must be a valid registered provider id".into(),
+                    )),
+                    (_, Err(error)) => Err((-32602, error.to_string())),
+                }
+            }
             "version.list" => match self.version_manifest().await {
                 Ok(manifest) => {
                     serde_json::to_value(manifest.versions).map_err(|e| (-32001, e.to_string()))

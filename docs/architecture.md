@@ -19,8 +19,13 @@ Terminal ─────── CLI ───────┘
 | `umc-sdk` | Stable Rust facade delegating to Core |
 | `umc` | CLI and stdio JSON-RPC adapter |
 | `umcd` | Local Unix Socket / Windows Named Pipe JSON-RPC host |
+| `umc-loader-api` | Common loader discovery and installation preflight contract |
+| `umc-loader-fabric` | Fabric Meta version/profile adapter |
+| `umc-loader-forge` | Forge Maven metadata and installer artifact adapter |
+| `umc-loader-neoforge` | NeoForge Maven metadata and installer artifact adapter |
+| `umc-loader-registry` | Built-in and host-registered adapter composition for Core |
 
-The four-library boundary plus `umcd` binary is intentional. Split download, version, Java, auth, instance, and launch modules into crates when they have independently useful APIs and stable seams; empty crates would only obscure dependencies. Keep dependency flow inward: adapters → SDK/API/Core; Core may depend on domain and infrastructure modules, never on adapters.
+Loader adapters are separate crates because their release metadata and installer strategies differ. The registry is the Core-facing composition point. Loader crates depend on the public loader contract and their upstream metadata sources; they do not depend on Core, RPC, or GUI code. Rust SDK hosts can register trusted in-process implementations with `LauncherBuilder::register_loader`; daemon hosts configure their own registry. UMC does not download or dynamically load provider code. The current adapter slice discovers versions and produces plans; Core does not yet execute those plans.
 
 ## Planned Core modules
 
@@ -43,5 +48,5 @@ Default managed data root is `UMC_DATA_DIR` or `./umc-data` during development; 
 5. Local daemon IPC with process reconnection and state recovery.
 6. Authentication and loader/modpack integrations.
 
-The workspace now includes the vanilla flow: official version metadata, SHA-1/size checked assets/libraries/client downloads, Java major-version compatibility detection, opt-in Mojang runtime provisioning, isolated instance files, launch/process status/stop, CLI and Rust SDK access. Managed runtimes live below `runtimes/` and are selected when their component matches the Minecraft version metadata. Instance config schema v1 migrates legacy files, keeps a backup on write, quarantines corruption, and offers repair from a validated install record. `umcd` serves the same JSON-RPC contract locally, and the SDK can reconnect through its socket or pipe. Install operations use persistent tasks with progress events, cancellation, retry, timeout, and shared concurrency limits. Process records are recovered on startup and stopped PIDs are identity-checked before signaling. See RPC v1 for offline-only authentication and task recovery semantics.
+The workspace now includes the vanilla flow and initial loader adapters: official version metadata, SHA-1/size checked assets/libraries/client downloads, Java major-version compatibility detection, opt-in Mojang runtime provisioning, isolated instance files, launch/process status/stop, CLI and Rust SDK access, and Fabric/Forge/NeoForge version discovery plus preflight planning. Managed runtimes live below `runtimes/` and are selected when their component matches the Minecraft version metadata. Instance config schema v1 migrates legacy files, keeps a backup on write, quarantines corruption, and offers repair from a validated install record. `umcd` serves the same JSON-RPC contract locally, and the SDK can reconnect through its socket or pipe. Install operations use persistent tasks with progress events, cancellation, retry, timeout, and shared concurrency limits. Process records are recovered on startup and stopped PIDs are identity-checked before signaling. See RPC v1 for current loader limits and task recovery semantics.
 

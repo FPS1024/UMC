@@ -1,5 +1,5 @@
 //! Stable Rust entry point. It delegates every operation to `umc-core`.
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 pub use umc_api::{
     CreateInstanceRequest, GameProcess, INSTANCE_CONFIG_SCHEMA_VERSION, InstallRequest,
     InstanceConfig, JavaRuntimeInfo, JavaRuntimeInstallRequest, JavaRuntimeInstallResult,
@@ -7,6 +7,11 @@ pub use umc_api::{
     TaskStatus, VersionEntry,
 };
 use umc_core::UmcCore;
+use umc_loader_api::LoaderAdapter;
+pub use umc_loader_api::{
+    LoaderId, LoaderInstallPlan, LoaderInstallRequest, LoaderInstallStrategy, LoaderVersion,
+};
+use umc_loader_registry::LoaderRegistry;
 
 #[derive(Clone)]
 pub struct Launcher {
@@ -17,6 +22,7 @@ pub struct Launcher {
 pub struct LauncherBuilder {
     data_dir: PathBuf,
     daemon: bool,
+    loaders: LoaderRegistry,
 }
 
 impl Launcher {
@@ -24,11 +30,44 @@ impl Launcher {
         LauncherBuilder {
             data_dir: PathBuf::from("umc-data"),
             daemon: false,
+            loaders: LoaderRegistry::new(),
         }
     }
     pub async fn versions(&self) -> Result<Vec<VersionEntry>, String> {
         serde_json::from_value(self.call("version.list", serde_json::Value::Null).await?)
             .map_err(|e| e.to_string())
+    }
+    pub async fn loaders(&self) -> Result<Vec<LoaderId>, String> {
+        serde_json::from_value(self.call("loader.list", serde_json::Value::Null).await?)
+            .map_err(|e| e.to_string())
+    }
+    pub async fn loader_versions(
+        &self,
+        loader: LoaderId,
+        minecraft_version: &str,
+    ) -> Result<Vec<LoaderVersion>, String> {
+        serde_json::from_value(
+            self.call(
+                "loader.versions",
+                serde_json::json!({"loader":loader,"minecraft_version":minecraft_version}),
+            )
+            .await?,
+        )
+        .map_err(|e| e.to_string())
+    }
+    pub async fn plan_loader_install(
+        &self,
+        loader: LoaderId,
+        request: LoaderInstallRequest,
+    ) -> Result<LoaderInstallPlan, String> {
+        serde_json::from_value(
+            self.call(
+                "loader.plan",
+                serde_json::json!({"loader":loader,"minecraft_version":request.minecraft_version,"loader_version":request.loader_version}),
+            )
+            .await?,
+        )
+        .map_err(|e| e.to_string())
     }
     pub async fn create_instance(
         &self,
@@ -252,11 +291,17 @@ impl LauncherBuilder {
         self.daemon = true;
         self
     }
+    /// Register an in-process loader provider. Daemon connections use the
+    /// providers configured by the daemon host itself.
+    pub fn register_loader(mut self, adapter: Arc<dyn LoaderAdapter>) -> Self {
+        self.loaders.register(adapter);
+        self
+    }
     pub async fn build(self) -> Result<Launcher, std::io::Error> {
         if !self.daemon {
             std::fs::create_dir_all(&self.data_dir)?;
         }
-        let core = UmcCore::new(self.data_dir);
+        let core = UmcCore::with_loaders(self.data_dir, self.loaders);
         let data_dir = core.data_dir().to_path_buf();
         Ok(Launcher {
             core,

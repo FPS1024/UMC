@@ -18,6 +18,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-trait"
+version = "0.1.92"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82f6aeea286b8eb4dd3431a1be1b59d290ace00f5bfd8e2a159bc2a05e2c1667"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -183,7 +194,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e35d6e78f4cebb90e51d543db8fe41528851d6deeef6ef21ebd4bfdc1e784776"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -640,6 +651,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.38.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b66c2058c55a409d601666cffe35f04333cf1013010882cec174a7467cd4e21c"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]
@@ -1201,8 +1221,62 @@ dependencies = [
  "shell-words",
  "tokio",
  "umc-api",
+ "umc-loader-api",
+ "umc-loader-registry",
  "uuid",
  "zip",
+]
+
+[[package]]
+name = "umc-loader-api"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "umc-loader-fabric"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "reqwest",
+ "serde",
+ "umc-loader-api",
+ "url",
+]
+
+[[package]]
+name = "umc-loader-forge"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "quick-xml",
+ "reqwest",
+ "umc-loader-api",
+ "url",
+]
+
+[[package]]
+name = "umc-loader-neoforge"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "reqwest",
+ "serde",
+ "umc-loader-api",
+ "url",
+]
+
+[[package]]
+name = "umc-loader-registry"
+version = "0.1.0"
+dependencies = [
+ "umc-loader-api",
+ "umc-loader-fabric",
+ "umc-loader-forge",
+ "umc-loader-neoforge",
 ]
 
 [[package]]
@@ -1213,6 +1287,8 @@ dependencies = [
  "tokio",
  "umc-api",
  "umc-core",
+ "umc-loader-api",
+ "umc-loader-registry",
 ]
 
 [[package]]

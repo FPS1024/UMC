@@ -6,6 +6,14 @@
 
 The workspace provides the shared Core, a Rust SDK, CLI, JSON-RPC 2.0 over newline-delimited stdio, Mojang version metadata, SHA-1/size checked vanilla downloads, Java compatibility detection and optional Mojang runtime provisioning, persistent asynchronous install tasks, isolated instances, and offline launch/process control. Microsoft authentication is not implemented yet.
 
+The loader adapter crates currently expose Fabric, Forge, and NeoForge version discovery and loader-specific installation preflight plans through RPC and the Rust SDK. Executing those plans, installing loader instances, and launching them are not supported yet. Mod content catalog APIs (for example CurseForge and Modrinth) remain separate.
+
+UMC is an independent community project. It is not an official Minecraft product and is not approved by or associated with Mojang or Microsoft. See [project, trademark, and privacy notes](docs/legal-and-privacy.md) for ownership boundaries, network behavior, and account-data plans.
+
+## Community
+
+Join the [UMC Discord server](https://discord.gg/d5qKvMp9Wc) to follow development and connect with the community.
+
 ## Build and run
 
 ```sh
@@ -25,7 +33,7 @@ cargo run -p umc -- rpc --stdio
 cargo run -p umc --bin umcd
 ```
 
-See [installation instructions](docs/install.md) for Rust requirements, per-user installation, CI artifacts, and first-run setup. Linux x86_64 is the active platform target; Windows and macOS are planned ports.
+See the [user guide](docs/user-guide.md) for first-run usage and local data details, and [installation instructions](docs/install.md) for Rust requirements, per-user installation, CI artifacts, and setup. Linux x86_64 is the active platform target; Windows and macOS are planned ports.
 
 Version lookup, game installation, and explicit runtime installation need network access. Set `UMC_DATA_DIR` to choose the cache and managed game data directory (default: `./umc-data`). The stdio transport reads one JSON-RPC request per line and writes one response per line. Managed Java downloads are opt-in and stored below `runtimes/`; launch prefers a compatible managed runtime matching the release's Mojang component, then falls back to system Java. `--offline` is explicit; this does not sign in to Microsoft or enable authenticated online play. The CLI waits for the game to exit and saves its console output under the instance logs directory.
 
@@ -54,5 +62,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-UMC is licensed under MIT. See [architecture](docs/architecture.md), [RPC v1](protocols/rpc-v1.md), [installation instructions](docs/install.md), and the [release policy](docs/release.md) for details.
+UMC is licensed under MIT. See the [developer and integration guide](docs/developer-guide.md), [architecture](docs/architecture.md), [RPC v1](protocols/rpc-v1.md), [project, trademark, and privacy notes](docs/legal-and-privacy.md), [installation instructions](docs/install.md), and the [release policy](docs/release.md) for details.
 

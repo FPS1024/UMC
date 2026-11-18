@@ -30,6 +30,9 @@ Errors use JSON-RPC reserved errors `-32700` (parse), `-32600` (invalid request)
 | `instance.remove` | `{ "instance_id" }` | removes that instance's private game directory and configuration |
 | `instance.repair` | `{ "instance_id" }` | restores a valid backup or reconstructs config from verified installation metadata |
 | `instance.install` | `{ "instance_id", "timeout_seconds?" }` | queues the vanilla install and returns a task handle |
+| `loader.list` | `{}` | built-in loader adapter IDs |
+| `loader.versions` | `{ "loader", "minecraft_version" }` | compatible versions from that loader's metadata source |
+| `loader.plan` | `{ "loader", "minecraft_version", "loader_version?" }` | loader-specific preflight plan; does not execute installation |
 | `java.detect` | `{ "path?", "minimum_major?" }` | Java runtime details and a `compatible` result for the requested major version |
 | `java.runtime.list` | `{}` | verified UMC managed runtimes |
 | `java.runtime.install` | `{ "minecraft_version", "timeout_seconds?" }` | queues installation of the Mojang runtime component required by an installed Minecraft version |
@@ -51,6 +54,8 @@ Errors use JSON-RPC reserved errors `-32700` (parse), `-32600` (invalid request)
 Instance configurations carry `schema_version`. Version 0 files migrate to version 1 on read and the old bytes are retained as `instance.json.bak`. Writes use a synced temporary file and atomic rename. A corrupt primary is quarantined and restored from a valid backup. If no backup remains, `instance.repair` can rebuild the config only when the version metadata and install record agree; game data is preserved. Unrecoverable config errors are surfaced by `instance.list` instead of silently hiding that directory.
 
 The current vanilla launch path is explicitly offline mode; Microsoft authentication is not implemented. Managed Java download is opt-in, uses Mojang's runtime catalog, and verifies catalog manifests and each runtime file by SHA-1 and size. Launch prefers a compatible managed runtime for the release's Mojang component, then checks system Java. `java.detect` reports an installed but incompatible Java so clients can explain the required version. Loader instances are not supported by the vanilla installer. Removal refuses running processes and refuses to delete when process state cannot be validated. CLI launch waits for the game to exit; stdout/stderr are written to `instances/<id>/logs/umc-console.log` so they cannot corrupt the stdio RPC stream.
+
+Loader adapters currently provide version discovery and a loader-specific install preflight only. Fabric plans use Fabric Meta's launcher profile; Forge and NeoForge plans identify their own Maven installer artifacts and checksum sidecars. `loader.plan` does not download, execute installers, modify an instance, or make loader instances launchable yet. Custom provider code can be registered by a trusted Rust host; providers are not loaded dynamically and daemon providers must be configured by the daemon host. CurseForge and Modrinth content APIs are separate from loader installation and are not part of these adapters.
 
 ## Task semantics
 

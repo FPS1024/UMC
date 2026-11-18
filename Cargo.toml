@@ -1,6 +1,16 @@
 [workspace]
 resolver = "2"
-members = ["crates/umc-api", "crates/umc-core", "crates/umc-sdk", "crates/umc-cli"]
+members = [
+    "crates/umc-api",
+    "crates/umc-core",
+    "crates/umc-sdk",
+    "crates/umc-cli",
+    "crates/umc-loader-api",
+    "crates/umc-loader-fabric",
+    "crates/umc-loader-forge",
+    "crates/umc-loader-neoforge",
+    "crates/umc-loader-registry",
+]
 
 [workspace.package]
 version = "0.1.0"
@@ -15,6 +25,9 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "fs", "io-util", "io-std", "time", "net", "signal"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
+async-trait = "0.1"
+quick-xml = "0.38"
+url = "2"
 sha1 = "0.10"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 uuid = { version = "1", features = ["v4", "serde"] }
@@ -25,4 +38,9 @@ libc = "0.2"
 umc-api = { path = "crates/umc-api" }
 umc-core = { path = "crates/umc-core" }
 umc-sdk = { path = "crates/umc-sdk" }
+umc-loader-api = { path = "crates/umc-loader-api" }
+umc-loader-fabric = { path = "crates/umc-loader-fabric" }
+umc-loader-forge = { path = "crates/umc-loader-forge" }
+umc-loader-neoforge = { path = "crates/umc-loader-neoforge" }
+umc-loader-registry = { path = "crates/umc-loader-registry" }
 

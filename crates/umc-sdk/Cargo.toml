@@ -10,6 +10,8 @@ repository.workspace = true
 [dependencies]
 umc-api.workspace = true
 umc-core.workspace = true
+umc-loader-api.workspace = true
+umc-loader-registry.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
 

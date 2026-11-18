@@ -50,3 +50,5 @@ umc-sdk = { path = "path/to/UMC/crates/umc-sdk" }
 ```
 
 Publishing crates to crates.io is not configured yet. Set the canonical repository URL and prepare third-party notices before that step.
+
+For first-run commands and data locations, see the [user guide](user-guide.md). For Rust SDK and JSON-RPC integration, see the [developer guide](developer-guide.md). Read the [project, trademark, and privacy notes](legal-and-privacy.md) for the current relationship to Minecraft and data-handling summary.
