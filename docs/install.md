@@ -4,7 +4,7 @@ The current release target is Linux x86_64. Windows and macOS are future platfor
 
 ## Build from source
 
-Install Rust 1.85 or newer with `rustup`, then from the root of a UMC checkout build the workspace:
+Install Rust 1.89 or newer with `rustup`, then from the root of a UMC checkout build the workspace:
 
 ```sh
 git clone https://github.com/FPS1024/UMC.git

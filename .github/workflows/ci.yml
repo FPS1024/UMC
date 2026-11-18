@@ -20,11 +20,11 @@ jobs:
       - run: cargo fmt --all -- --check
 
   msrv:
-    name: Minimum Rust version (1.85)
+    name: Minimum Rust version (1.89)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.85.0
+      - uses: dtolnay/rust-toolchain@1.89.0
       - run: cargo check --workspace --locked
 
   build-linux:

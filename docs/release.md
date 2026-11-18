@@ -3,7 +3,7 @@
 ## Support baseline
 
 - Rust edition: 2024.
-- Minimum supported Rust version (MSRV): 1.85. CI checks the workspace with Rust 1.85 and builds release binaries with stable Rust.
+- Minimum supported Rust version (MSRV): 1.89. CI checks the workspace with Rust 1.89 and builds release binaries with stable Rust.
 - Active platform target: Linux x86_64 GNU. Windows and macOS remain planned ports; their code is not currently in the release validation target.
 - Runtime validation is currently Linux-only. A successful build does not certify daemon IPC permissions or game launch behavior on another operating system.
 - UMC 0.1 supports vanilla Minecraft Java Edition installation and explicit offline launch. Microsoft authentication and loader/modpack support are outside this release scope.
