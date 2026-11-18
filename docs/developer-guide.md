@@ -8,7 +8,7 @@ UMC is designed so community applications can use one Core through either the Ru
 - **Cross-language GUI:** communicate with `umcd` through local IPC or run `umc rpc --stdio` as a child process using newline-delimited JSON-RPC 2.0.
 - **Shell automation:** use the `umc` CLI for commands and scripts; use task methods for long-running operations.
 
-See [RPC v1](../protocols/rpc-v1.md) for methods, event sequencing, task semantics, and compatibility policy. See [architecture](architecture.md) for crate boundaries.
+See [RPC v1](protocols/rpc-v1.md) for methods, event sequencing, task semantics, and compatibility policy. See [architecture](architecture.md) for crate boundaries.
 
 ## Rust SDK
 
@@ -43,6 +43,14 @@ The SDK crate is not yet published to crates.io. Rust hosts can register trusted
 Use JSON-RPC method results and task events as the integration contract. Do not parse terminal progress output to discover task state. Install methods return task IDs; clients can query, cancel, and subscribe to sequenced events. Ignore unknown optional fields and event types to remain forward-compatible.
 
 The stdio transport uses one JSON-RPC message per line. Daemon IPC is local to the configured data directory. Do not expose or proxy the daemon as a remote service without adding an explicit authenticated and authorized boundary.
+
+The CLI can start the stdio adapter with `umc rpc --stdio`; run `umcd` to serve the same contract over a local Unix socket or Windows named pipe. Rust SDK clients can select the daemon transport with `Launcher::builder().data_dir(...).connect_daemon()`. Keep the data directory private because its local socket/pipe and stored task/process state are part of the control boundary. The daemon does not open a TCP listener.
+
+Example request:
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"system.info","params":{}}
+```
 
 ## Attribution and redistribution
 

@@ -4,7 +4,31 @@ UMC is a headless engine for managing and launching Minecraft: Java Edition. It 
 
 ## Install and first run
 
-Follow [Install UMC](install.md) to build or download the Linux x86_64 release. Set `UMC_DATA_DIR` to select where UMC stores managed data. If unset, development builds use `./umc-data` relative to the current working directory.
+The current release target is Linux x86_64. Windows and macOS are planned ports.
+
+### Build from source
+
+Install Rust 1.89 or newer with `rustup`, then build from the repository root:
+
+```sh
+git clone https://github.com/FPS1024/UMC.git
+cd UMC
+cargo build --workspace --locked --release
+```
+
+The executables are `target/release/umc` and `target/release/umcd`. To install them into the current Rust user's binary directory instead:
+
+```sh
+cargo install --path crates/umc-cli --locked
+```
+
+### Download a release
+
+Download the Linux archive and matching `.sha256` checksum from the [GitHub Releases page](https://github.com/FPS1024/UMC/releases). Verify the checksum, extract the archive, and put `umc` and `umcd` in a directory on `PATH`. Development artifacts from GitHub Actions are available from each workflow run, expire after seven days, and are not stable releases.
+
+### First run
+
+Set `UMC_DATA_DIR` to choose where UMC stores managed data. If unset, development builds use `./umc-data` relative to the current working directory. Version lookup, game installation, and managed Java downloads require network access.
 
 Create and install a vanilla instance:
 
@@ -14,6 +38,10 @@ umc instance create Survival 1.21.10
 umc instance list
 umc instance install <instance-id>
 umc task get <task-id>
+umc instance repair <instance-id>
+umc java detect 21
+umc java runtimes
+umc process list
 ```
 
 Launch currently requires explicit offline mode:
@@ -23,6 +51,8 @@ umc launch <instance-id> Player --offline
 ```
 
 Offline mode does not verify account ownership or enable authenticated multiplayer. Do not treat it as a Microsoft account login.
+
+To install an optional managed Java runtime for a Minecraft version, use `umc java install <minecraft-version>`. Install and runtime downloads return task IDs; use `umc task get <task-id>` to follow progress. `umcd` can keep running in the background so clients can inspect or cancel persistent tasks.
 
 ## Local data and logs
 

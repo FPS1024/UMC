@@ -1,4 +1,7 @@
 /target
 /umc-data
 *.log
+/site/
+/.venv/
+__pycache__/
 
