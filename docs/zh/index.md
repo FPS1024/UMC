@@ -9,8 +9,8 @@ hero:
       text: 下载 Linux 版
       link: https://github.com/FPS1024/UMC/releases/latest
     - theme: alt
-      text: 阅读文档（英文）
-      link: /guide/quickstart
+      text: 阅读文档
+      link: /zh/guide/quickstart
     - theme: alt
       text: GitHub
       link: https://github.com/FPS1024/UMC
@@ -48,14 +48,6 @@ features:
     details: Fabric、Forge 和 NeoForge 适配器可以查询版本并生成安装预检计划；执行安装与启动是下一阶段目标。
 ---
 
-## 中文版正在完善
-
-中文文档正在逐步补充。当前的快速开始、开发指南和 RPC 参考仍以英文提供，功能、命令和行为在所有语言版本中保持一致。
-
-::: tip 语言切换
-右上角的 `EN / 中文` 可以随时切换中英文首页；英文文档站保持不变。
-:::
-
 ## 现在可以做什么
 
 - 在 Linux x86_64 上安装并离线启动原版 Minecraft: Java Edition
@@ -66,9 +58,9 @@ features:
 
 ## 开发者资源
 
-- [快速开始（英文）](/guide/quickstart)
-- [集成指南（英文）](/development/)
-- [JSON-RPC v1 参考（英文）](/reference/rpc-v1)
+- [快速开始](/zh/guide/quickstart)
+- [集成指南](/zh/development/)
+- [JSON-RPC v1 参考](/zh/reference/rpc-v1)
 - [GitHub 仓库](https://github.com/FPS1024/UMC)
 
 > UMC 是独立社区项目，不是官方 Minecraft 产品，也与 Mojang 或 Microsoft 没有关联。

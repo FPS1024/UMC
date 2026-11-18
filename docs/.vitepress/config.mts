@@ -1,20 +1,157 @@
 import { defineConfig } from 'vitepress'
 
 const base = '/UMC/'
+const releases = 'https://github.com/FPS1024/UMC/releases/latest'
+const repo = 'https://github.com/FPS1024/UMC'
 
 const landingRedirectScript = `(function () {
   var base = ${JSON.stringify(base)};
   var path = location.pathname;
+  var en = base + 'en/';
+  var zh = base + 'zh/';
   var landing = path === base || path === base.replace(/\\/$/, '') ||
-    path === base + 'index.html' || path === base + 'zh/' ||
-    path === base + 'zh' || path === base + 'zh/index.html';
+    path === base + 'index.html' ||
+    path === en || path === base + 'en' || path === en + 'index.html' ||
+    path === zh || path === base + 'zh' || path === zh + 'index.html';
   if (landing) document.documentElement.classList.add('umc-landing');
 })();`
 
+const englishNav = [
+  { text: 'Guide', link: '/en/guide/quickstart', activeMatch: '^/en/guide/' },
+  { text: 'Development', link: '/en/development/', activeMatch: '^/en/development/' },
+  { text: 'Reference', link: '/en/reference/rpc-v1', activeMatch: '^/en/reference/' },
+  { text: 'Download', link: releases },
+]
+
+const chineseNav = [
+  { text: '引导', link: '/zh/guide/quickstart', activeMatch: '^/zh/guide/' },
+  { text: '开发文档', link: '/zh/development/', activeMatch: '^/zh/development/' },
+  { text: '参考', link: '/zh/reference/rpc-v1', activeMatch: '^/zh/reference/' },
+  { text: '下载', link: releases },
+]
+
+const englishSidebar = {
+  '/en/guide/': [
+    {
+      text: 'Getting started',
+      items: [
+        { text: 'Quickstart', link: '/en/guide/quickstart' },
+        { text: 'Installation', link: '/en/guide/install' },
+        { text: 'User guide', link: '/en/guide/user-guide' },
+      ],
+    },
+    {
+      text: 'Reference',
+      items: [
+        { text: 'JSON-RPC v1', link: '/en/reference/rpc-v1' },
+        { text: 'Release policy', link: '/en/reference/release' },
+      ],
+    },
+  ],
+  '/en/development/': [
+    {
+      text: 'Development',
+      items: [
+        { text: 'Integration guide', link: '/en/development/' },
+        { text: 'Rust SDK', link: '/en/development/sdk' },
+        { text: 'Architecture', link: '/en/development/architecture' },
+      ],
+    },
+    {
+      text: 'Reference',
+      items: [
+        { text: 'JSON-RPC v1', link: '/en/reference/rpc-v1' },
+        { text: 'Release notes — v0.1.0', link: '/en/reference/releases/v0.1.0' },
+      ],
+    },
+  ],
+  '/en/reference/': [
+    {
+      text: 'Reference',
+      items: [
+        { text: 'JSON-RPC v1', link: '/en/reference/rpc-v1' },
+        { text: 'Release policy', link: '/en/reference/release' },
+        { text: 'Legal and privacy', link: '/en/reference/legal-and-privacy' },
+        { text: 'Release notes — v0.1.0', link: '/en/reference/releases/v0.1.0' },
+      ],
+    },
+    {
+      text: 'Develop',
+      items: [
+        { text: 'Integration guide', link: '/en/development/' },
+        { text: 'Rust SDK', link: '/en/development/sdk' },
+        { text: 'Architecture', link: '/en/development/architecture' },
+      ],
+    },
+  ],
+}
+
+const chineseSidebar = {
+  '/zh/guide/': [
+    {
+      text: '开始',
+      items: [
+        { text: '快速开始', link: '/zh/guide/quickstart' },
+        { text: '安装', link: '/zh/guide/install' },
+        { text: '用户指南', link: '/zh/guide/user-guide' },
+      ],
+    },
+    {
+      text: '参考',
+      items: [
+        { text: 'JSON-RPC v1', link: '/zh/reference/rpc-v1' },
+        { text: '发布策略', link: '/zh/reference/release' },
+      ],
+    },
+  ],
+  '/zh/development/': [
+    {
+      text: '开发',
+      items: [
+        { text: '集成指南', link: '/zh/development/' },
+        { text: 'Rust SDK', link: '/zh/development/sdk' },
+        { text: '架构', link: '/zh/development/architecture' },
+      ],
+    },
+    {
+      text: '参考',
+      items: [
+        { text: 'JSON-RPC v1', link: '/zh/reference/rpc-v1' },
+        { text: '发布说明 — v0.1.0', link: '/zh/reference/releases/v0.1.0' },
+      ],
+    },
+  ],
+  '/zh/reference/': [
+    {
+      text: '参考',
+      items: [
+        { text: 'JSON-RPC v1', link: '/zh/reference/rpc-v1' },
+        { text: '发布策略', link: '/zh/reference/release' },
+        { text: '法律与隐私', link: '/zh/reference/legal-and-privacy' },
+        { text: '发布说明 — v0.1.0', link: '/zh/reference/releases/v0.1.0' },
+      ],
+    },
+    {
+      text: '开发',
+      items: [
+        { text: '集成指南', link: '/zh/development/' },
+        { text: 'Rust SDK', link: '/zh/development/sdk' },
+        { text: '架构', link: '/zh/development/architecture' },
+      ],
+    },
+  ],
+}
+
+const chineseFooter = {
+  message:
+    'UMC 是独立社区项目，不是官方 Minecraft 产品，也与 Mojang 或 Microsoft 没有关联。',
+  copyright: '基于 MIT License 发布 · © 2026 UMC 贡献者',
+}
+
 export default defineConfig({
   lang: 'en-US',
-  title: 'UMC',
-  titleTemplate: ':title | Universal Minecraft Core',
+  title: 'Universal Minecraft Core',
+  titleTemplate: ':title',
   description:
     'UMC is a headless Minecraft: Java Edition launcher engine written in Rust. Install, launch, and supervise the game from your own application.',
   base,
@@ -53,75 +190,85 @@ export default defineConfig({
   markdown: {
     theme: { light: 'github-dark', dark: 'github-dark' },
   },
+  vite: {
+    plugins: [
+      {
+        name: 'umc-dev-root-redirect',
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            const pathname = req.url?.split('?')[0]
+            if (pathname === '/' || pathname === '/UMC/' || pathname === '/UMC/index.html') {
+              res.statusCode = 302
+              res.setHeader('Location', `${base}zh/`)
+              res.end()
+              return
+            }
+            next()
+          })
+        },
+      },
+    ],
+  },
+  locales: {
+    root: {
+      label: 'English',
+      lang: 'en-US',
+    },
+    en: {
+      label: 'English',
+      lang: 'en-US',
+      link: '/en/',
+      title: 'Universal Minecraft Core',
+      description:
+        'UMC is a headless Minecraft: Java Edition launcher engine written in Rust.',
+      themeConfig: {
+        nav: englishNav,
+        sidebar: englishSidebar,
+      },
+    },
+    zh: {
+      label: '简体中文',
+      lang: 'zh-CN',
+      link: '/zh/',
+      title: 'Universal Minecraft Core',
+      description: '用 Rust 编写的无界面 Minecraft: Java Edition 启动引擎。',
+      themeConfig: {
+        nav: chineseNav,
+        sidebar: chineseSidebar,
+        // Because the root theme config below applies to English, override
+        // the shared labels for Chinese pages here.
+        editLink: {
+          pattern: 'https://github.com/FPS1024/UMC/edit/main/docs/:path',
+          text: '在 GitHub 上编辑此页',
+        },
+        outline: {
+          level: [2, 3],
+          label: '本页目录',
+        },
+        docFooter: {
+          prev: '上一页',
+          next: '下一页',
+        },
+        darkModeSwitchLabel: '外观',
+        lightModeSwitchTitle: '切换到浅色主题',
+        darkModeSwitchTitle: '切换到深色主题',
+        sidebarMenuLabel: '菜单',
+        returnToTopLabel: '回到顶部',
+        lastUpdated: {
+          text: '更新时间',
+          formatOptions: { dateStyle: 'medium', timeStyle: 'short' },
+        },
+        footer: chineseFooter,
+      },
+    },
+  },
   themeConfig: {
     logo: '/appicon.png',
     siteTitle: 'Universal Minecraft Core',
-    nav: [
-      { text: 'Guide', link: '/guide/quickstart', activeMatch: '^/guide/' },
-      { text: 'Development', link: '/development/', activeMatch: '^/development/' },
-      { text: 'Reference', link: '/reference/rpc-v1', activeMatch: '^/reference/' },
-      {
-        text: 'Download',
-        link: 'https://github.com/FPS1024/UMC/releases/latest',
-      },
-    ],
-    sidebar: {
-      '/guide/': [
-        {
-          text: 'Getting started',
-          items: [
-            { text: 'Quickstart', link: '/guide/quickstart' },
-            { text: 'Installation', link: '/guide/install' },
-            { text: 'User guide', link: '/guide/user-guide' },
-          ],
-        },
-        {
-          text: 'Reference',
-          items: [
-            { text: 'JSON-RPC v1', link: '/reference/rpc-v1' },
-            { text: 'Release policy', link: '/reference/release' },
-          ],
-        },
-      ],
-      '/development/': [
-        {
-          text: 'Development',
-          items: [
-            { text: 'Integration guide', link: '/development/' },
-            { text: 'Rust SDK', link: '/development/sdk' },
-            { text: 'Architecture', link: '/development/architecture' },
-          ],
-        },
-        {
-          text: 'Reference',
-          items: [
-            { text: 'JSON-RPC v1', link: '/reference/rpc-v1' },
-            { text: 'Release notes — v0.1.0', link: '/reference/releases/v0.1.0' },
-          ],
-        },
-      ],
-      '/reference/': [
-        {
-          text: 'Reference',
-          items: [
-            { text: 'JSON-RPC v1', link: '/reference/rpc-v1' },
-            { text: 'Release policy', link: '/reference/release' },
-            { text: 'Legal and privacy', link: '/reference/legal-and-privacy' },
-            { text: 'Release notes — v0.1.0', link: '/reference/releases/v0.1.0' },
-          ],
-        },
-        {
-          text: 'Develop',
-          items: [
-            { text: 'Integration guide', link: '/development/' },
-            { text: 'Rust SDK', link: '/development/sdk' },
-            { text: 'Architecture', link: '/development/architecture' },
-          ],
-        },
-      ],
-    },
+    nav: [],
+    sidebar: {},
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/FPS1024/UMC' },
+      { icon: 'github', link: repo },
       {
         icon: {
           svg: '<svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.099.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.334-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.334-.946 2.418-2.157 2.418z"/></svg>',

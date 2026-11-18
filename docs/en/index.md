@@ -10,7 +10,7 @@ hero:
       link: https://github.com/FPS1024/UMC/releases/latest
     - theme: alt
       text: Read the docs
-      link: /guide/quickstart
+      link: /en/guide/quickstart
     - theme: alt
       text: View on GitHub
       link: https://github.com/FPS1024/UMC

@@ -1,3 +1,8 @@
+---
+translation: pending
+source: en/guide/quickstart.md
+---
+
 # Quickstart
 
 Go from a fresh Linux machine to a running vanilla Minecraft: Java Edition client in a few
@@ -107,8 +112,8 @@ Microsoft account login.
 
 ## 6. Next steps
 
-- [User guide](/guide/user-guide) — data locations, commands, logs, and network behavior.
-- [Rust SDK](/development/sdk) — embed UMC Core in a Rust application.
-- [Integration guide](/development/) — choose between the SDK, CLI, and JSON-RPC.
-- [JSON-RPC v1](/reference/rpc-v1) — full method and task semantics.
-- [Release policy](/reference/release) — platform support and compatibility promises.
+- [User guide](/zh/guide/user-guide) — data locations, commands, logs, and network behavior.
+- [Rust SDK](/zh/development/sdk) — embed UMC Core in a Rust application.
+- [Integration guide](/zh/development/) — choose between the SDK, CLI, and JSON-RPC.
+- [JSON-RPC v1](/zh/reference/rpc-v1) — full method and task semantics.
+- [Release policy](/zh/reference/release) — platform support and compatibility promises.

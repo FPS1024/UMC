@@ -7,4 +7,4 @@ __pycache__/
 node_modules/
 /docs/.vitepress/cache/
 /docs/.vitepress/dist/
-/docs/reference/rpc-v1.md
+/docs/en/reference/rpc-v1.md

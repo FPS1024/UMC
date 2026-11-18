@@ -2,15 +2,27 @@
 import { computed } from 'vue'
 import { useData, withBase } from 'vitepress'
 
-const { frontmatter, page } = useData()
-const isHome = computed(() => frontmatter.value.layout === 'home')
-const isChinese = computed(() => page.value.relativePath.startsWith('zh/'))
+const { page } = useData()
+
+const relativePath = computed(() => page.value.relativePath)
+const isChinese = computed(() => relativePath.value.startsWith('zh/'))
+const isLocalePage = computed(() => /^(en|zh)\//.test(relativePath.value))
+
+const localePath = computed(() => {
+  const bare = relativePath.value
+    .replace(/^(en|zh)\//, '')
+    .replace(/\.md$/, '')
+  return bare.replace(/(^|\/)index$/, '$1')
+})
+
+const englishHref = computed(() => withBase(`/en/${localePath.value}`))
+const chineseHref = computed(() => withBase(`/zh/${localePath.value}`))
 </script>
 
 <template>
-  <nav v-if="isHome" class="umc-lang-switch" aria-label="Language">
-    <a :href="withBase('/')" :class="{ active: !isChinese }" hreflang="en">EN</a>
-    <a :href="withBase('/zh/')" :class="{ active: isChinese }" hreflang="zh-CN">中文</a>
+  <nav v-if="isLocalePage" class="umc-lang-switch" aria-label="Language">
+    <a :href="englishHref" :class="{ active: !isChinese }" hreflang="en">EN</a>
+    <a :href="chineseHref" :class="{ active: isChinese }" hreflang="zh-CN">中文</a>
   </nav>
 </template>
 

@@ -62,13 +62,13 @@ const isChinese = computed(() => page.value.relativePath.startsWith('zh/'))
           launch the game — all from the terminal.
         </p>
         <div class="umc-inline-links">
-          <a class="umc-inline-link" :href="withBase('/guide/quickstart')">
+          <a class="umc-inline-link" :href="withBase('/en/guide/quickstart')">
             Read the quickstart
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M4 10h12M11 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </a>
-          <a class="umc-inline-link" :href="withBase('/guide/user-guide')">User guide</a>
+          <a class="umc-inline-link" :href="withBase('/en/guide/user-guide')">User guide</a>
         </div>
       </div>
       <div class="umc-code-card">
@@ -157,7 +157,7 @@ const isChinese = computed(() => page.value.relativePath.startsWith('zh/'))
           <li><span class="umc-roadmap-dot"></span>Windows and macOS ports</li>
           <li><span class="umc-roadmap-dot"></span>Live log and crash-report streaming</li>
         </ul>
-        <a class="umc-status-link" :href="withBase('/reference/release')">Read the release policy →</a>
+        <a class="umc-status-link" :href="withBase('/en/reference/release')">Read the release policy →</a>
       </div>
     </section>
 
@@ -180,7 +180,7 @@ const isChinese = computed(() => page.value.relativePath.startsWith('zh/'))
             </svg>
             Download for Linux
           </a>
-          <a class="umc-button" :href="withBase('/guide/quickstart')">
+          <a class="umc-button" :href="withBase('/en/guide/quickstart')">
             Read the docs
           </a>
           <a class="umc-button umc-button--ghost" href="https://github.com/FPS1024/UMC">

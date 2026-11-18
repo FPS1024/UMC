@@ -120,9 +120,24 @@ body {
   height: 28px;
   border-radius: 7px;
 }
+@media (min-width: 1200px) {
+  .VPNavBarTitle {
+    flex-shrink: 0;
+  }
+  .VPNavBarTitle .title > span {
+    overflow: visible;
+    text-overflow: clip;
+  }
+}
 /* The landing pages use a language switch in place of search. */
 .VPNavBar.home .VPNavBarSearch,
 .umc-landing .VPNavBarSearch {
+  display: none !important;
+}
+
+/* UMC uses its own EN / 中文 segmented switch instead of the built-in menu. */
+.VPNavBarTranslations,
+.VPNavScreenTranslations {
   display: none !important;
 }
 .VPNavBarMenuLink {

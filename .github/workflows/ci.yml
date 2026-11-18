@@ -45,7 +45,7 @@ jobs:
           cp target/x86_64-unknown-linux-gnu/release/umc "$package_dir/"
           cp target/x86_64-unknown-linux-gnu/release/umcd "$package_dir/"
           cp LICENSE README.md "$package_dir/"
-          cp docs/guide/user-guide.md "$package_dir/INSTALL.md"
+          cp docs/en/guide/user-guide.md "$package_dir/INSTALL.md"
           tar -C dist -czf dist/umc-linux-x86_64.tar.gz umc-linux-x86_64
           sha256sum dist/umc-linux-x86_64.tar.gz > dist/umc-linux-x86_64.tar.gz.sha256
       - name: Upload Linux release candidate
