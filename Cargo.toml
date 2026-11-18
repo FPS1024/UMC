@@ -1,0 +1,28 @@
+[workspace]
+resolver = "2"
+members = ["crates/umc-api", "crates/umc-core", "crates/umc-sdk", "crates/umc-cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+authors = ["Ceaser.K.W <ceaser.k.w@outlook.com>"]
+license = "MIT"
+repository = "https://github.com/FPS1024/UMC"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "fs", "io-util", "io-std", "time", "net", "signal"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
+sha1 = "0.10"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+md5 = "0.7"
+shell-words = "1"
+futures-util = "0.3"
+libc = "0.2"
+umc-api = { path = "crates/umc-api" }
+umc-core = { path = "crates/umc-core" }
+umc-sdk = { path = "crates/umc-sdk" }
+

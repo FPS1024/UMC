@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo fmt --all -- --check
+
+  msrv:
+    name: Minimum Rust version (1.85)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.85.0
+      - run: cargo check --workspace --locked
+
+  build-linux:
+    name: Build (Linux x86_64)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+      - name: Build all workspace packages
+        run: cargo build --workspace --locked --release --target x86_64-unknown-linux-gnu
+      - name: Assemble Linux archive and checksum
+        shell: bash
+        run: |
+          package_dir="dist/umc-linux-x86_64"
+          mkdir -p "$package_dir"
+          cp target/x86_64-unknown-linux-gnu/release/umc "$package_dir/"
+          cp target/x86_64-unknown-linux-gnu/release/umcd "$package_dir/"
+          cp LICENSE README.md "$package_dir/"
+          cp docs/install.md "$package_dir/INSTALL.md"
+          tar -C dist -czf dist/umc-linux-x86_64.tar.gz umc-linux-x86_64
+          sha256sum dist/umc-linux-x86_64.tar.gz > dist/umc-linux-x86_64.tar.gz.sha256
+      - name: Upload Linux release candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: umc-linux-x86_64
+          path: |
+            dist/umc-linux-x86_64.tar.gz
+            dist/umc-linux-x86_64.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 7
