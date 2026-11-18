@@ -23,7 +23,7 @@ Mojang and Microsoft retain their rights in the Minecraft name, marks, logos, ga
 | Fabric, Forge, NeoForge, mod platforms, mods, and modpacks | Independently maintained or created. Their names, code, content, trademarks, terms, and licenses remain with their respective owners. UMC's adapters do not grant rights to those projects or content. |
 | Rust dependencies | Third-party software governed by the licenses declared by their authors. Release packaging should include applicable notices; the UMC MIT license does not replace dependency licenses. |
 
-MIT applies to UMC's own covered software. It does not grant rights to Minecraft files, third-party services, mods, or trademarks. “Powered by UMC Core” is an optional integration credit, not an endorsement and not an MIT requirement. See the [developer guide](developer-guide.md) for redistribution notes.
+MIT applies to UMC's own covered software. It does not grant rights to Minecraft files, third-party services, mods, or trademarks. “Powered by UMC Core” is an optional integration credit, not an endorsement and not an MIT requirement. See the [developer guide](../development/index.md) for redistribution notes.
 
 ## Privacy summary for the current version
 

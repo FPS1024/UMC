@@ -1,72 +1,49 @@
-# Universal Minecraft Core
+---
+layout: home
 
-**One Core. Every Launcher.**
+hero:
+  text: One Core. Every Launcher.
+  tagline: "A headless Minecraft: Java Edition launcher engine written in Rust. Install, verify, launch, and supervise the game from your own application — through a Rust SDK, a local JSON-RPC daemon, or the CLI."
+  actions:
+    - theme: brand
+      text: Download for Linux
+      link: https://github.com/FPS1024/UMC/releases/latest
+    - theme: alt
+      text: Read the docs
+      link: /guide/quickstart
+    - theme: alt
+      text: View on GitHub
+      link: https://github.com/FPS1024/UMC
 
-UMC is a headless Minecraft: Java Edition launcher engine. It provides a shared Rust foundation that community applications can use as a library or operate as a standalone program through JSON-RPC.
-
-## Project overview
-
-UMC separates launcher functionality from user interfaces. Applications can integrate through:
-
-- The Rust SDK
-- The command-line interface
-- JSON-RPC 2.0 over stdio or local daemon IPC
-
-## Documentation
-
-<div class="grid cards" markdown>
-
--   **Getting started**
-
-    ---
-
-    Build or install UMC, set up its data directory, and run a vanilla instance.
-
-    [Read the user guide](user-guide.md)
-
--   **Architecture**
-
-    ---
-
-    Learn how the Core, SDK, CLI, RPC, and provider adapters fit together.
-
-    [Read the architecture overview](architecture.md)
-
--   **Developer integration**
-
-    ---
-
-    Integrate UMC with a Rust application or a cross-language GUI.
-
-    [Read the developer guide](developer-guide.md)
-
--   **RPC reference**
-
-    ---
-
-    Review the canonical JSON-RPC v1 methods, events, and limitations.
-
-    [Read the RPC documentation](protocols/rpc-v1.md)
-
--   **Release policy**
-
-    ---
-
-    Check platform support, compatibility rules, and release procedures.
-
-    [Read the release policy](release.md)
-
-</div>
-
-## Project status
-
-UMC is under active development. Linux x86_64 is the current release platform. Vanilla installation and explicit offline launch are supported. Microsoft authentication is not implemented; Fabric, Forge, and NeoForge adapters currently provide version discovery and installation preflight only.
-
-UMC is an independent community project, not an official Minecraft product and not approved by or associated with Mojang or Microsoft. Read the [project, trademark, and privacy notes](legal-and-privacy.md).
-
-## Project links
-
-- [GitHub repository](https://github.com/FPS1024/UMC)
-- [Issue tracker](https://github.com/FPS1024/UMC/issues)
-- [Releases](https://github.com/FPS1024/UMC/releases)
-- [Community Discord](https://discord.gg/d5qKvMp9Wc)
+features:
+  - icon:
+      src: /icons/core.svg
+      alt: Core
+    title: Rust-native core
+    details: One shared umc-core implementation powers the SDK, CLI, and daemon. Typed contracts, structured errors, and no duplicated launcher logic.
+  - icon:
+      src: /icons/shield.svg
+      alt: Integrity
+    title: Integrity checked
+    details: Every client, library, asset, log config, and runtime file is verified by SHA-1 and size before it is used. Failed files are retried, never trusted.
+  - icon:
+      src: /icons/tasks.svg
+      alt: Tasks
+    title: Persistent tasks
+    details: Installs run as durable tasks with sequenced progress events, cancellation, retries, timeouts, and recovery after a daemon restart.
+  - icon:
+      src: /icons/lock.svg
+      alt: Local
+    title: Local-first by default
+    details: The daemon speaks JSON-RPC over a private Unix socket or named pipe. There is no TCP listener, no account service, and no telemetry.
+  - icon:
+      src: /icons/java.svg
+      alt: Java
+    title: Managed Java
+    details: Detect compatible system Java or provision Mojang runtimes on demand, with per-version compatibility checks before launch.
+  - icon:
+      src: /icons/puzzle.svg
+      alt: Loaders
+    title: Loader-ready adapters
+    details: Fabric, Forge, and NeoForge adapters discover versions and produce loader-specific install plans. Execution is the next milestone.
+---

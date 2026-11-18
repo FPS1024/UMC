@@ -17,11 +17,23 @@ Join the [UMC Discord server](https://discord.gg/d5qKvMp9Wc) to follow developme
 ## Documentation
 
 - [Official documentation website](https://fps1024.github.io/UMC/)
-- [User guide](docs/user-guide.md) — installation, building, first run, data locations, and common commands.
-- [Developer and integration guide](docs/developer-guide.md) — Rust SDK, JSON-RPC, and GUI integration.
-- [Architecture](docs/architecture.md)
+- [User guide](docs/guide/user-guide.md) — installation, building, first run, data locations, and common commands.
+- [Developer and integration guide](docs/development/index.md) — Rust SDK, JSON-RPC, and GUI integration.
+- [Architecture](docs/development/architecture.md)
 - [RPC v1 protocol](protocols/rpc-v1.md)
-- [Project, trademark, and privacy notes](docs/legal-and-privacy.md)
-- [Release and compatibility policy](docs/release.md)
+- [Project, trademark, and privacy notes](docs/reference/legal-and-privacy.md)
+- [Release and compatibility policy](docs/reference/release.md)
 
-UMC is licensed under MIT. It is an independent project, not an official Minecraft product, and is not approved by or associated with Mojang or Microsoft. See the [project and trademark notes](docs/legal-and-privacy.md) for ownership boundaries and the current privacy summary.
+### Preview the documentation site
+
+The documentation site is built with VitePress. Install Node.js 18 or newer, then run:
+
+```sh
+npm install
+npm run docs:dev
+```
+
+The development server prints a local URL. `npm run docs:build` produces the static site in
+`docs/.vitepress/dist/`.
+
+UMC is licensed under MIT. It is an independent project, not an official Minecraft product, and is not approved by or associated with Mojang or Microsoft. See the [project and trademark notes](docs/reference/legal-and-privacy.md) for ownership boundaries and the current privacy summary.

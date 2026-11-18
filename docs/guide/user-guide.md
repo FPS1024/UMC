@@ -70,4 +70,4 @@ Version lookup, game installation, and Java runtime installation make HTTPS requ
 
 Microsoft authentication is not currently available, and this version does not store Microsoft passwords, access tokens, or refresh tokens. When account support is implemented, the project will document the browser flow, token storage, account removal, and the requests made to Microsoft, Xbox, and Minecraft services before enabling it.
 
-See [Project, Trademark, and Privacy Notes](legal-and-privacy.md) for the current privacy summary and project ownership boundaries.
+See [Project, Trademark, and Privacy Notes](../reference/legal-and-privacy.md) for the current privacy summary and project ownership boundaries.

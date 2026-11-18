@@ -13,7 +13,7 @@ umc-sdk = { path = "path/to/UMC/crates/umc-sdk" }
 
 ## Example
 
-```rust,no_run
+```rust
 use umc_sdk::Launcher;
 
 #[tokio::main]
@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-Use `Launcher::builder().connect_daemon()` to send calls to an existing local `umcd` process. See the [developer guide](../developer-guide.md) for integration boundaries and the [RPC v1 reference](../protocols/rpc-v1.md) for operation details.
+Use `Launcher::builder().connect_daemon()` to send calls to an existing local `umcd` process. See the [developer guide](./index.md) for integration boundaries and the [RPC v1 reference](../reference/rpc-v1.md) for operation details.
 
 ## Documentation status
 

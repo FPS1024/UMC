@@ -8,7 +8,7 @@ UMC is designed so community applications can use one Core through either the Ru
 - **Cross-language GUI:** communicate with `umcd` through local IPC or run `umc rpc --stdio` as a child process using newline-delimited JSON-RPC 2.0.
 - **Shell automation:** use the `umc` CLI for commands and scripts; use task methods for long-running operations.
 
-See [RPC v1](protocols/rpc-v1.md) for methods, event sequencing, task semantics, and compatibility policy. See [architecture](architecture.md) for crate boundaries.
+See [RPC v1](../reference/rpc-v1.md) for methods, event sequencing, task semantics, and compatibility policy. See [architecture](architecture.md) for crate boundaries.
 
 ## Rust SDK
 
@@ -19,7 +19,7 @@ During development, point Cargo at the SDK crate:
 umc-sdk = { path = "../UMC/crates/umc-sdk" }
 ```
 
-```rust,no_run
+```rust
 use umc_sdk::Launcher;
 
 #[tokio::main]
@@ -56,6 +56,6 @@ Example request:
 
 UMC is licensed under MIT. Preserve its copyright and license text when redistributing UMC or substantial portions of it. Include the license in application packages, such as in a `licenses/` folder or an About/Legal screen that provides the complete notice.
 
-An application may optionally acknowledge the integration with “Powered by UMC Core” in its About page, credits, or documentation. This is a community attribution suggestion, not a requirement of the MIT license. Do not imply that UMC endorses the integrating application. The Minecraft non-affiliation notice is separate; see [Project, Trademark, and Privacy Notes](legal-and-privacy.md).
+An application may optionally acknowledge the integration with “Powered by UMC Core” in its About page, credits, or documentation. This is a community attribution suggestion, not a requirement of the MIT license. Do not imply that UMC endorses the integrating application. The Minecraft non-affiliation notice is separate; see [Project, Trademark, and Privacy Notes](../reference/legal-and-privacy.md).
 
 The integrating application remains responsible for documenting its own telemetry, network requests, account handling, and privacy practices. UMC's local privacy summary does not automatically cover behavior added by a GUI or another host application.
