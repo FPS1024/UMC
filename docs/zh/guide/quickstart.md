@@ -1,28 +1,26 @@
 ---
-translation: pending
 source: en/guide/quickstart.md
 ---
 
-# Quickstart
+# 快速开始
 
-Go from a fresh Linux machine to a running vanilla Minecraft: Java Edition client in a few
-commands. UMC installs the game into an isolated instance and launches it in explicit offline mode.
+从一台全新的 Linux 机器出发，用几条命令启动原版 Minecraft: Java Edition 客户端。UMC 会把游戏安装到独立实例中，并以显式离线模式启动。
 
-::: tip Before you start
+::: tip 开始之前
 
-- **Platform:** Linux x86_64 is the current release target.
-- **Network:** version lookup, game files, and Java runtimes are downloaded over HTTPS.
-- **Toolchain:** Rust 1.89 or newer only if you build from source.
+- **平台：** 当前发布目标是 Linux x86_64。
+- **网络：** 版本查询、游戏文件和 Java 运行时通过 HTTPS 下载。
+- **工具链：** 只有从源码构建时才需要 Rust 1.89 或更新版本。
 
 :::
 
-## 1. Install UMC
+## 1. 安装 UMC
 
-Use a published release or build from source.
+使用已发布的版本，或者从源码构建。
 
 ::: code-group
 
-```sh [Release]
+```sh [发布包]
 VERSION=0.1.0
 curl -LO "https://github.com/FPS1024/UMC/releases/download/v${VERSION}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
 curl -LO "https://github.com/FPS1024/UMC/releases/download/v${VERSION}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
@@ -30,7 +28,7 @@ sha256sum -c "umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
 tar -xzf "umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
 ```
 
-```sh [From source]
+```sh [从源码]
 git clone https://github.com/FPS1024/UMC.git
 cd UMC
 cargo build --workspace --locked --release
@@ -38,19 +36,18 @@ cargo build --workspace --locked --release
 
 :::
 
-Put `umc` and `umcd` on your `PATH`, or call them from the build directory. The rest of this page
-uses `umc` directly.
+把 `umc` 和 `umcd` 放到 `PATH` 中，或者直接从构建目录调用。本页后续命令默认直接使用 `umc`。
 
-## 2. Create an instance
+## 2. 创建实例
 
-List official versions, then create an isolated instance for the version you want:
+列出官方版本，然后为需要的版本创建独立实例：
 
 ```sh
 umc version list
 umc instance create Survival 1.21.1
 ```
 
-The command prints an instance ID that starts with `instance-`. Use that ID in the next steps:
+命令会输出一个以 `instance-` 开头的实例 ID。后续步骤使用这个 ID：
 
 ```json
 {
@@ -60,60 +57,59 @@ The command prints an instance ID that starts with `instance-`. Use that ID in t
 }
 ```
 
-## 3. Install the game files
+## 3. 安装游戏文件
 
 ```sh
 umc instance install instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204
 ```
 
-The CLI waits for the install task and prints progress on stderr. Client JARs, libraries, assets,
-and logging configuration are verified by SHA-1 and size before they are accepted. Re-running the
-command repairs missing or corrupt files.
+CLI 会等待安装任务完成，并把进度输出到 stderr。客户端 JAR、库、资源和日志配置在接受前都会经过 SHA-1 与大小校验。重复执行该命令可以修复缺失或损坏的文件。
 
-If you use the daemon in the background, follow progress with the returned task ID instead:
+如果在后台使用守护进程，可以用返回的任务 ID 跟踪进度：
 
 ```sh
 umc task get <task-id>
 umc task events <task-id>
 ```
 
-## 4. Provision Java
+## 4. 准备 Java
 
-Minecraft 1.21.1 requires Java 21. UMC checks for a compatible managed runtime first, then system
-Java. If neither is available, install Mojang's runtime:
+Minecraft 1.21.1 需要 Java 21。UMC 会先查找兼容的托管运行时，然后检查系统 Java。如果两者都不可用，安装 Mojang 运行时：
 
 ```sh
 umc java install 1.21.1
 ```
 
-Inspect what UMC found:
+查看 UMC 找到的 Java：
 
 ```sh
 umc java detect 21
 umc java runtimes
 ```
 
-## 5. Launch offline
+## 5. 离线启动
 
 ```sh
 umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 Steve --offline
 ```
 
-Replace `Steve` with a 1–16 character offline username. The CLI waits for the game to exit and
-writes stdout and stderr to `instances/<instance-id>/logs/umc-console.log`.
+把 `Steve` 替换为 1–16 个字符的离线用户名。CLI 会等待游戏退出，并把 stdout 和 stderr 写入 `instances/<instance-id>/logs/umc-console.log`。
 
-::: warning Offline mode only
+::: warning 仅支持离线模式
 
-This release does not implement Microsoft authentication, so authenticated online play is not
-available. `--offline` is required and does not verify account ownership. Do not treat it as a
-Microsoft account login.
+当前版本没有实现 Microsoft 认证，因此不支持需要认证的在线游戏。必须显式传入 `--offline`，它不会验证账号所有权，不要把它当作 Microsoft 账号登录。
 
 :::
 
-## 6. Next steps
+## 6. 下一步
 
-- [User guide](/zh/guide/user-guide) — data locations, commands, logs, and network behavior.
-- [Rust SDK](/zh/development/sdk) — embed UMC Core in a Rust application.
-- [Integration guide](/zh/development/) — choose between the SDK, CLI, and JSON-RPC.
-- [JSON-RPC v1](/zh/reference/rpc-v1) — full method and task semantics.
-- [Release policy](/zh/reference/release) — platform support and compatibility promises.
+- [用户指南](/zh/guide/user-guide) —— CLI、数据模型和工作流总览。
+- [CLI 参考](/zh/guide/cli) —— 所有命令、参数和输出约定。
+- [实例](/zh/guide/instances) —— 创建、安装、修复和删除实例。
+- [Java 运行时](/zh/guide/java) —— 检测、安装和运行时选择。
+- [启动与进程](/zh/guide/launching) —— 启动行为、日志和进程控制。
+- [故障排查](/zh/guide/troubleshooting) —— 常见错误与恢复步骤。
+- [Rust SDK](/zh/development/sdk) —— 在 Rust 应用中嵌入 UMC Core。
+- [集成指南](/zh/development/) —— 在 SDK、CLI 和 JSON-RPC 之间选择。
+- [JSON-RPC v1](/zh/reference/rpc-v1) —— 完整的方法和任务语义。
+- [发布策略](/zh/reference/release) —— 平台支持与兼容性承诺。

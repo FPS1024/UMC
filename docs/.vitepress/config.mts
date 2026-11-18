@@ -41,6 +41,18 @@ const englishSidebar = {
       ],
     },
     {
+      text: 'Using UMC',
+      items: [
+        { text: 'CLI reference', link: '/en/guide/cli' },
+        { text: 'Instances', link: '/en/guide/instances' },
+        { text: 'Java runtimes', link: '/en/guide/java' },
+        { text: 'Launching and processes', link: '/en/guide/launching' },
+        { text: 'Tasks and the local daemon', link: '/en/guide/tasks-and-daemon' },
+        { text: 'Data, logs, and backups', link: '/en/guide/data-and-logs' },
+        { text: 'Troubleshooting', link: '/en/guide/troubleshooting' },
+      ],
+    },
+    {
       text: 'Reference',
       items: [
         { text: 'JSON-RPC v1', link: '/en/reference/rpc-v1' },
@@ -55,6 +67,10 @@ const englishSidebar = {
         { text: 'Integration guide', link: '/en/development/' },
         { text: 'Rust SDK', link: '/en/development/sdk' },
         { text: 'Architecture', link: '/en/development/architecture' },
+        { text: 'Loader adapters', link: '/en/development/loaders' },
+        { text: 'JSON-RPC client guide', link: '/en/development/rpc-client' },
+        { text: 'Testing and CI', link: '/en/development/testing' },
+        { text: 'Contributing', link: '/en/development/contributing' },
       ],
     },
     {
@@ -97,6 +113,18 @@ const chineseSidebar = {
       ],
     },
     {
+      text: '使用 UMC',
+      items: [
+        { text: 'CLI 参考', link: '/zh/guide/cli' },
+        { text: '实例', link: '/zh/guide/instances' },
+        { text: 'Java 运行时', link: '/zh/guide/java' },
+        { text: '启动与进程', link: '/zh/guide/launching' },
+        { text: '任务与守护进程', link: '/zh/guide/tasks-and-daemon' },
+        { text: '数据、日志与备份', link: '/zh/guide/data-and-logs' },
+        { text: '故障排查', link: '/zh/guide/troubleshooting' },
+      ],
+    },
+    {
       text: '参考',
       items: [
         { text: 'JSON-RPC v1', link: '/zh/reference/rpc-v1' },
@@ -111,6 +139,10 @@ const chineseSidebar = {
         { text: '集成指南', link: '/zh/development/' },
         { text: 'Rust SDK', link: '/zh/development/sdk' },
         { text: '架构', link: '/zh/development/architecture' },
+        { text: '加载器适配器', link: '/zh/development/loaders' },
+        { text: 'JSON-RPC 客户端指南', link: '/zh/development/rpc-client' },
+        { text: '测试与 CI', link: '/zh/development/testing' },
+        { text: '贡献指南', link: '/zh/development/contributing' },
       ],
     },
     {

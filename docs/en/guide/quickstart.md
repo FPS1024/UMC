@@ -107,7 +107,12 @@ Microsoft account login.
 
 ## 6. Next steps
 
-- [User guide](/en/guide/user-guide) — data locations, commands, logs, and network behavior.
+- [User guide](/en/guide/user-guide) — overview of the CLI, data model, and workflow.
+- [CLI reference](/en/guide/cli) — every command, argument, and output convention.
+- [Instances](/en/guide/instances) — create, install, repair, and remove instances.
+- [Java runtimes](/en/guide/java) — detection, provisioning, and runtime selection.
+- [Launching and processes](/en/guide/launching) — launch behavior, logs, and process control.
+- [Troubleshooting](/en/guide/troubleshooting) — common errors and recovery steps.
 - [Rust SDK](/en/development/sdk) — embed UMC Core in a Rust application.
 - [Integration guide](/en/development/) — choose between the SDK, CLI, and JSON-RPC.
 - [JSON-RPC v1](/en/reference/rpc-v1) — full method and task semantics.

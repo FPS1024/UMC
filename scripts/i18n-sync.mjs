@@ -50,15 +50,25 @@ function withTranslationMeta(frontmatter, relativePath) {
 
 const files = await markdownFiles(sourceRoot)
 let created = 0
+let refreshed = 0
+let unchanged = 0
 let existing = 0
 
 for (const file of files) {
   const relativePath = relative(sourceRoot, file)
   const target = join(targetRoot, relativePath)
+  let targetExists = false
+  let currentContent = null
 
   if (await exists(target)) {
-    existing += 1
-    continue
+    targetExists = true
+    currentContent = await readFile(target, 'utf8')
+    // Files without the pending marker are treated as edited translations and
+    // are never overwritten. Pending files are managed English fallbacks.
+    if (!/^translation\s*:\s*pending\s*$/m.test(currentContent)) {
+      existing += 1
+      continue
+    }
   }
 
   let content = await readFile(file, 'utf8')
@@ -68,12 +78,22 @@ for (const file of files) {
   const { frontmatter, body } = splitFrontmatter(content)
   const output = `---\n${withTranslationMeta(frontmatter, relativePath)}\n---\n\n${body.replace(/^\s+/, '')}`
 
+  if (targetExists && currentContent === output) {
+    unchanged += 1
+    continue
+  }
+
   await mkdir(dirname(target), { recursive: true })
   await writeFile(target, output)
-  created += 1
-  console.log(`created docs/zh/${relativePath}`)
+  if (targetExists) {
+    refreshed += 1
+    console.log(`refreshed docs/zh/${relativePath}`)
+  } else {
+    created += 1
+    console.log(`created docs/zh/${relativePath}`)
+  }
 }
 
 console.log(
-  `i18n sync: ${created} created, ${existing} existing, ${files.length} English pages`,
+  `i18n sync: ${created} created, ${refreshed} refreshed, ${unchanged} unchanged, ${existing} translated, ${files.length} English pages`,
 )

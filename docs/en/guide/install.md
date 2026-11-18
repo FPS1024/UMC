@@ -79,4 +79,6 @@ It does not delete a Microsoft or Minecraft account.
 ## Next steps
 
 - [Quickstart](/en/guide/quickstart) — create and launch your first instance.
-- [User guide](/en/guide/user-guide) — commands, data layout, and network behavior.
+- [User guide](/en/guide/user-guide) — overview of the CLI, data model, and workflow.
+- [CLI reference](/en/guide/cli) — full command reference.
+- [Troubleshooting](/en/guide/troubleshooting) — common installation and launch errors.

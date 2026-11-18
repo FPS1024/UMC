@@ -47,20 +47,3 @@ features:
     title: 加载器适配器
     details: Fabric、Forge 和 NeoForge 适配器可以查询版本并生成安装预检计划；执行安装与启动是下一阶段目标。
 ---
-
-## 现在可以做什么
-
-- 在 Linux x86_64 上安装并离线启动原版 Minecraft: Java Edition
-- 对客户端、库和资源执行 SHA-1 与大小校验
-- 检测系统 Java，或安装 Mojang 托管运行时
-- 通过 CLI、Rust SDK 或本地 JSON-RPC 守护进程接入
-- 查看持久化任务进度、取消任务，并在守护进程重启后恢复进程状态
-
-## 开发者资源
-
-- [快速开始](/zh/guide/quickstart)
-- [集成指南](/zh/development/)
-- [JSON-RPC v1 参考](/zh/reference/rpc-v1)
-- [GitHub 仓库](https://github.com/FPS1024/UMC)
-
-> UMC 是独立社区项目，不是官方 Minecraft 产品，也与 Mojang 或 Microsoft 没有关联。

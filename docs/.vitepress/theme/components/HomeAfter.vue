@@ -4,18 +4,139 @@ import { useData, withBase } from 'vitepress'
 
 const { page } = useData()
 const isChinese = computed(() => page.value.relativePath.startsWith('zh/'))
+const locale = computed(() => (isChinese.value ? 'zh' : 'en'))
+const quickstartHref = computed(() => withBase(`/${locale.value}/guide/quickstart`))
+const userGuideHref = computed(() => withBase(`/${locale.value}/guide/user-guide`))
+const releaseHref = computed(() => withBase(`/${locale.value}/reference/release`))
+
+const en = {
+  surfaces: {
+    eyebrow: 'One engine, three surfaces',
+    title: 'Pick the integration that fits your app',
+    lead: 'Every surface delegates to the same umc-core implementation, so behavior and state stay consistent whether you embed UMC or run it beside your process.',
+    sdk: { title: 'Rust SDK', desc: 'Typed methods for versions, instances, tasks, Java, and processes — in your process.', code: 'umc-sdk' },
+    daemon: { title: 'Local daemon', desc: 'Newline-delimited JSON-RPC over a Unix socket or Windows named pipe. No TCP listener.', code: 'umcd' },
+    cli: { title: 'CLI', desc: 'Script installs, inspect tasks, and launch offline clients without writing code.', code: 'umc' },
+  },
+  quickstart: {
+    eyebrow: 'Quickstart',
+    title: 'From zero to a running client',
+    lead: 'Create an isolated instance, verify every downloaded file, provision Java if needed, and launch the game — all from the terminal.',
+    read: 'Read the quickstart',
+    guide: 'User guide',
+  },
+  architecture: {
+    eyebrow: 'Architecture',
+    title: 'Headless by design',
+    lead: 'UMC owns the launcher work. Your application owns the interface, accounts, and product experience.',
+    nodes: [
+      { kicker: '01', title: 'Your application', desc: 'Desktop GUI, server tool, or automation script.', tags: ['UI', 'accounts'] },
+      { kicker: '02', title: 'umc-core', desc: 'Install, verify, launch, supervise, persist.', tags: ['Rust', 'local-first', 'no telemetry'] },
+      { kicker: '03', title: 'Minecraft', desc: 'Java Edition, installed into isolated instances.', tags: ['vanilla', 'offline'] },
+    ],
+  },
+  status: {
+    nowPill: 'Available now',
+    nowTitle: 'What ships in v0.1.0',
+    nowItems: [
+      'Vanilla version discovery and verified downloads',
+      'Isolated instances with config migration and repair',
+      'Explicit offline launch with process supervision',
+      'Managed Mojang Java runtime provisioning',
+      'Persistent install tasks with progress and cancellation',
+      'JSON-RPC, local daemon, and Rust SDK parity',
+    ],
+    nextPill: 'In development',
+    nextTitle: 'On the roadmap',
+    nextItems: [
+      'Microsoft account authentication and online play',
+      'Fabric, Forge, and NeoForge install and launch',
+      'Mod, modpack, and resource pack management',
+      'Windows and macOS ports',
+      'Live log and crash-report streaming',
+    ],
+    releaseLink: 'Read the release policy →',
+  },
+  cta: {
+    eyebrow: 'Start building',
+    title: 'Ship your launcher on UMC.',
+    lead: 'Download the Linux build, follow the quickstart, or integrate the engine directly into your Rust application.',
+    download: 'Download for Linux',
+    docs: 'Read the docs',
+    github: 'GitHub',
+    note: 'MIT licensed · Linux x86_64 · No telemetry',
+  },
+}
+
+const zh = {
+  surfaces: {
+    eyebrow: '一个引擎，三种接入方式',
+    title: '选择适合你的应用的集成方式',
+    lead: '所有接入方式都委托给同一个 umc-core 实现，因此无论嵌入 UMC 还是与进程并行运行，行为和状态都保持一致。',
+    sdk: { title: 'Rust SDK', desc: '在当前进程内提供版本、实例、任务、Java 和进程的类型化方法。', code: 'umc-sdk' },
+    daemon: { title: '本地守护进程', desc: '通过 Unix Socket 或 Windows 命名管道提供换行分隔 JSON-RPC。没有 TCP 监听。', code: 'umcd' },
+    cli: { title: 'CLI', desc: '不用写代码即可脚本化安装、查看任务并离线启动客户端。', code: 'umc' },
+  },
+  quickstart: {
+    eyebrow: '快速开始',
+    title: '从零到运行客户端',
+    lead: '创建独立实例，校验每个下载文件，按需准备 Java，然后从终端启动游戏。',
+    read: '阅读快速开始',
+    guide: '用户指南',
+  },
+  architecture: {
+    eyebrow: '架构',
+    title: '无界面设计',
+    lead: 'UMC 负责启动器工作。你的应用负责界面、账号和产品体验。',
+    nodes: [
+      { kicker: '01', title: '你的应用', desc: '桌面 GUI、服务器工具或自动化脚本。', tags: ['界面', '账号'] },
+      { kicker: '02', title: 'umc-core', desc: '安装、校验、启动、监管、持久化。', tags: ['Rust', '本地优先', '无遥测'] },
+      { kicker: '03', title: 'Minecraft', desc: 'Java Edition，安装到独立实例中。', tags: ['原版', '离线'] },
+    ],
+  },
+  status: {
+    nowPill: '当前可用',
+    nowTitle: 'v0.1.0 包含什么',
+    nowItems: [
+      '原版版本发现与已验证下载',
+      '带配置迁移和修复的独立实例',
+      '带进程监管的显式离线启动',
+      'Mojang 托管 Java 运行时安装',
+      '带进度和取消的持久化安装任务',
+      'JSON-RPC、本地守护进程与 Rust SDK 能力一致',
+    ],
+    nextPill: '开发中',
+    nextTitle: '路线图',
+    nextItems: [
+      'Microsoft 账号认证与在线游戏',
+      'Fabric、Forge 和 NeoForge 安装与启动',
+      '模组、整合包和资源包管理',
+      'Windows 和 macOS 移植',
+      '实时日志与崩溃报告流',
+    ],
+    releaseLink: '阅读发布策略 →',
+  },
+  cta: {
+    eyebrow: '开始构建',
+    title: '用 UMC 构建你的启动器。',
+    lead: '下载 Linux 构建、阅读快速开始，或把引擎直接集成到你的 Rust 应用中。',
+    download: '下载 Linux 版',
+    docs: '阅读文档',
+    github: 'GitHub',
+    note: 'MIT 许可证 · Linux x86_64 · 无遥测',
+  },
+}
+
+const t = computed(() => (isChinese.value ? zh : en))
 </script>
 
 <template>
-  <div v-if="!isChinese" class="umc-home-extra">
+  <div class="umc-home-extra">
     <section class="umc-section umc-surfaces">
       <div class="umc-section-head">
-        <p class="umc-eyebrow">One engine, three surfaces</p>
-        <h2>Pick the integration that fits your app</h2>
-        <p class="umc-lead">
-          Every surface delegates to the same <code>umc-core</code> implementation, so behavior and
-          state stay consistent whether you embed UMC or run it beside your process.
-        </p>
+        <p class="umc-eyebrow">{{ t.surfaces.eyebrow }}</p>
+        <h2>{{ t.surfaces.title }}</h2>
+        <p class="umc-lead">{{ t.surfaces.lead }}</p>
       </div>
       <div class="umc-surface-grid">
         <article class="umc-surface-card">
@@ -24,9 +145,9 @@ const isChinese = computed(() => page.value.relativePath.startsWith('zh/'))
               <path d="M7 8 3 12l4 4M17 8l4 4-4 4M14 5l-4 14" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
-          <h3>Rust SDK</h3>
-          <p>Typed methods for versions, instances, tasks, Java, and processes — in your process.</p>
-          <code>umc-sdk</code>
+          <h3>{{ t.surfaces.sdk.title }}</h3>
+          <p>{{ t.surfaces.sdk.desc }}</p>
+          <code>{{ t.surfaces.sdk.code }}</code>
         </article>
         <article class="umc-surface-card">
           <div class="umc-surface-icon">
@@ -35,9 +156,9 @@ const isChinese = computed(() => page.value.relativePath.startsWith('zh/'))
               <path d="M3.5 12h17M12 3.5c2.4 2.4 3.5 5.3 3.5 8.5S14.4 18.1 12 20.5C9.6 18.1 8.5 15.2 8.5 12S9.6 5.9 12 3.5Z" />
             </svg>
           </div>
-          <h3>Local daemon</h3>
-          <p>Newline-delimited JSON-RPC over a Unix socket or Windows named pipe. No TCP listener.</p>
-          <code>umcd</code>
+          <h3>{{ t.surfaces.daemon.title }}</h3>
+          <p>{{ t.surfaces.daemon.desc }}</p>
+          <code>{{ t.surfaces.daemon.code }}</code>
         </article>
         <article class="umc-surface-card">
           <div class="umc-surface-icon">
@@ -46,29 +167,26 @@ const isChinese = computed(() => page.value.relativePath.startsWith('zh/'))
               <path d="m7 9 3 3-3 3M12.5 15H17" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
-          <h3>CLI</h3>
-          <p>Script installs, inspect tasks, and launch offline clients without writing code.</p>
-          <code>umc</code>
+          <h3>{{ t.surfaces.cli.title }}</h3>
+          <p>{{ t.surfaces.cli.desc }}</p>
+          <code>{{ t.surfaces.cli.code }}</code>
         </article>
       </div>
     </section>
 
     <section class="umc-section umc-quickstart">
       <div class="umc-quickstart-copy">
-        <p class="umc-eyebrow">Quickstart</p>
-        <h2>From zero to a running client</h2>
-        <p class="umc-lead">
-          Create an isolated instance, verify every downloaded file, provision Java if needed, and
-          launch the game — all from the terminal.
-        </p>
+        <p class="umc-eyebrow">{{ t.quickstart.eyebrow }}</p>
+        <h2>{{ t.quickstart.title }}</h2>
+        <p class="umc-lead">{{ t.quickstart.lead }}</p>
         <div class="umc-inline-links">
-          <a class="umc-inline-link" :href="withBase('/en/guide/quickstart')">
-            Read the quickstart
+          <a class="umc-inline-link" :href="quickstartHref">
+            {{ t.quickstart.read }}
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M4 10h12M11 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </a>
-          <a class="umc-inline-link" :href="withBase('/en/guide/user-guide')">User guide</a>
+          <a class="umc-inline-link" :href="userGuideHref">{{ t.quickstart.guide }}</a>
         </div>
       </div>
       <div class="umc-code-card">
@@ -91,85 +209,57 @@ const isChinese = computed(() => page.value.relativePath.startsWith('zh/'))
 
     <section class="umc-section umc-architecture">
       <div class="umc-section-head umc-section-head--center">
-        <p class="umc-eyebrow">Architecture</p>
-        <h2>Headless by design</h2>
-        <p class="umc-lead">
-          UMC owns the launcher work. Your application owns the interface, accounts, and product
-          experience.
-        </p>
+        <p class="umc-eyebrow">{{ t.architecture.eyebrow }}</p>
+        <h2>{{ t.architecture.title }}</h2>
+        <p class="umc-lead">{{ t.architecture.lead }}</p>
       </div>
       <div class="umc-flow">
-        <div class="umc-flow-node">
-          <span class="umc-flow-kicker">01</span>
-          <strong>Your application</strong>
-          <p>Desktop GUI, server tool, or automation script.</p>
-          <div class="umc-flow-tags"><span>UI</span><span>accounts</span></div>
-        </div>
-        <div class="umc-flow-arrow" aria-hidden="true">
-          <svg viewBox="0 0 40 16" fill="none" stroke="currentColor" stroke-width="1.6">
-            <path d="M2 8h34M30 3l6 5-6 5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </div>
-        <div class="umc-flow-node umc-flow-node--core">
-          <span class="umc-flow-kicker">02</span>
-          <strong>umc-core</strong>
-          <p>Install, verify, launch, supervise, persist.</p>
-          <div class="umc-flow-tags"><span>Rust</span><span>local-first</span><span>no telemetry</span></div>
-        </div>
-        <div class="umc-flow-arrow" aria-hidden="true">
-          <svg viewBox="0 0 40 16" fill="none" stroke="currentColor" stroke-width="1.6">
-            <path d="M2 8h34M30 3l6 5-6 5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </div>
-        <div class="umc-flow-node">
-          <span class="umc-flow-kicker">03</span>
-          <strong>Minecraft</strong>
-          <p>Java Edition, installed into isolated instances.</p>
-          <div class="umc-flow-tags"><span>vanilla</span><span>offline</span></div>
-        </div>
+        <template v-for="(node, i) in t.architecture.nodes" :key="node.kicker">
+          <div class="umc-flow-node" :class="{ 'umc-flow-node--core': i === 1 }">
+            <span class="umc-flow-kicker">{{ node.kicker }}</span>
+            <strong>{{ node.title }}</strong>
+            <p>{{ node.desc }}</p>
+            <div class="umc-flow-tags">
+              <span v-for="tag in node.tags" :key="tag">{{ tag }}</span>
+            </div>
+          </div>
+          <div v-if="i < t.architecture.nodes.length - 1" class="umc-flow-arrow" aria-hidden="true">
+            <svg viewBox="0 0 40 16" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M2 8h34M30 3l6 5-6 5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+        </template>
       </div>
     </section>
 
     <section class="umc-section umc-status">
       <div class="umc-status-card umc-status-card--now">
         <div class="umc-status-head">
-          <span class="umc-status-pill umc-status-pill--live"><span></span>Available now</span>
-          <h2>What ships in v0.1.0</h2>
+          <span class="umc-status-pill umc-status-pill--live"><span></span>{{ t.status.nowPill }}</span>
+          <h2>{{ t.status.nowTitle }}</h2>
         </div>
         <ul class="umc-checklist">
-          <li>Vanilla version discovery and verified downloads</li>
-          <li>Isolated instances with config migration and repair</li>
-          <li>Explicit offline launch with process supervision</li>
-          <li>Managed Mojang Java runtime provisioning</li>
-          <li>Persistent install tasks with progress and cancellation</li>
-          <li>JSON-RPC, local daemon, and Rust SDK parity</li>
+          <li v-for="item in t.status.nowItems" :key="item">{{ item }}</li>
         </ul>
       </div>
       <div class="umc-status-card umc-status-card--next">
         <div class="umc-status-head">
-          <span class="umc-status-pill umc-status-pill--next"><span></span>In development</span>
-          <h2>On the roadmap</h2>
+          <span class="umc-status-pill umc-status-pill--next"><span></span>{{ t.status.nextPill }}</span>
+          <h2>{{ t.status.nextTitle }}</h2>
         </div>
         <ul class="umc-roadmap">
-          <li><span class="umc-roadmap-dot"></span>Microsoft account authentication and online play</li>
-          <li><span class="umc-roadmap-dot"></span>Fabric, Forge, and NeoForge install and launch</li>
-          <li><span class="umc-roadmap-dot"></span>Mod, modpack, and resource pack management</li>
-          <li><span class="umc-roadmap-dot"></span>Windows and macOS ports</li>
-          <li><span class="umc-roadmap-dot"></span>Live log and crash-report streaming</li>
+          <li v-for="item in t.status.nextItems" :key="item"><span class="umc-roadmap-dot"></span>{{ item }}</li>
         </ul>
-        <a class="umc-status-link" :href="withBase('/en/reference/release')">Read the release policy →</a>
+        <a class="umc-status-link" :href="releaseHref">{{ t.status.releaseLink }}</a>
       </div>
     </section>
 
     <section class="umc-cta">
       <div class="umc-cta-glow"></div>
       <div class="umc-cta-inner">
-        <p class="umc-eyebrow">Start building</p>
-        <h2>Ship your launcher on UMC.</h2>
-        <p>
-          Download the Linux build, follow the quickstart, or integrate the engine directly into
-          your Rust application.
-        </p>
+        <p class="umc-eyebrow">{{ t.cta.eyebrow }}</p>
+        <h2>{{ t.cta.title }}</h2>
+        <p>{{ t.cta.lead }}</p>
         <div class="umc-cta-actions">
           <a
             class="umc-button umc-button--primary"
@@ -178,19 +268,19 @@ const isChinese = computed(() => page.value.relativePath.startsWith('zh/'))
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M10 3v10M6 9l4 4 4-4M4 16h12" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
-            Download for Linux
+            {{ t.cta.download }}
           </a>
-          <a class="umc-button" :href="withBase('/en/guide/quickstart')">
-            Read the docs
+          <a class="umc-button" :href="quickstartHref">
+            {{ t.cta.docs }}
           </a>
           <a class="umc-button umc-button--ghost" href="https://github.com/FPS1024/UMC">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-2.2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.14 1.18a10.9 10.9 0 0 1 5.72 0c2.18-1.49 3.14-1.18 3.14-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z" />
             </svg>
-            GitHub
+            {{ t.cta.github }}
           </a>
         </div>
-        <p class="umc-cta-note">MIT licensed · Linux x86_64 · No telemetry</p>
+        <p class="umc-cta-note">{{ t.cta.note }}</p>
       </div>
     </section>
   </div>

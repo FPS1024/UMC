@@ -1,19 +1,17 @@
 ---
-translation: pending
 source: en/guide/install.md
 ---
 
-# Installation
+# 安装
 
-UMC ships as a Linux x86_64 GNU archive containing two executables:
+UMC 以 Linux x86_64 GNU 压缩包发布，包含两个可执行文件：
 
-- `umc` — CLI and stdio JSON-RPC adapter.
-- `umcd` — local JSON-RPC daemon over a private Unix socket.
+- `umc` —— CLI 和 stdio JSON-RPC 适配器。
+- `umcd` —— 基于私有 Unix Socket 的本地 JSON-RPC 守护进程。
 
-## Download a release
+## 下载发布包
 
-Download the archive and its SHA-256 checksum from the
-[latest GitHub release](https://github.com/FPS1024/UMC/releases/latest), then verify and unpack:
+从 [GitHub 最新发布](https://github.com/FPS1024/UMC/releases/latest) 下载压缩包和 SHA-256 校验和，然后校验并解压：
 
 ```sh
 VERSION=0.1.0
@@ -26,22 +24,21 @@ install -m 755 "umc-v${VERSION}-linux-x86_64-gnu/umc" ~/.local/bin/umc
 install -m 755 "umc-v${VERSION}-linux-x86_64-gnu/umcd" ~/.local/bin/umcd
 ```
 
-Confirm the binaries run:
+确认二进制可以运行：
 
 ```sh
 umc help
 ```
 
-::: warning Releases are unsigned
+::: warning 发布包尚未签名
 
-Verify the published SHA-256 checksum before unpacking or running a release. Releases are not
-code-signed yet.
+解压或运行发布包之前，请先校验发布的 SHA-256 校验和。当前版本尚未进行代码签名。
 
 :::
 
-## Build from source
+## 从源码构建
 
-Install Rust 1.89 or newer with [rustup](https://rustup.rs/), then build the workspace:
+使用 [rustup](https://rustup.rs/) 安装 Rust 1.89 或更新版本，然后构建工作区：
 
 ```sh
 git clone https://github.com/FPS1024/UMC.git
@@ -49,39 +46,37 @@ cd UMC
 cargo build --workspace --locked --release
 ```
 
-The executables are written to `target/release/umc` and `target/release/umcd`. To install them
-into the current Rust user's binary directory:
+可执行文件位于 `target/release/umc` 和 `target/release/umcd`。如需安装到当前 Rust 用户的二进制目录：
 
 ```sh
 cargo install --path crates/umc-cli --locked
 ```
 
-## Data directory
+## 数据目录
 
-UMC stores instances, downloads, managed Java runtimes, task state, process state, and logs beneath
-one data directory. Choose it with `UMC_DATA_DIR`:
+UMC 把所有实例、下载内容、托管 Java 运行时、任务状态、进程状态和日志放在一个数据目录下。通过 `UMC_DATA_DIR` 选择目录：
 
 ```sh
 export UMC_DATA_DIR="$HOME/.local/share/umc"
 umc version list
 ```
 
-If `UMC_DATA_DIR` is unset, development builds use `./umc-data` relative to the current working
-directory. Keep this directory private: it contains the daemon socket and local process state.
+如果没有设置 `UMC_DATA_DIR`，开发构建会使用相对于当前工作目录的 `./umc-data`。请保持该目录私有：其中包含守护进程 Socket 和本地进程状态。
 
-## Uninstall
+## 卸载
 
-Remove the binaries and, if you no longer need your managed data, the data directory:
+删除二进制文件；如果不再需要托管数据，再删除数据目录：
 
 ```sh
 rm -f ~/.local/bin/umc ~/.local/bin/umcd
 rm -rf "${UMC_DATA_DIR:-./umc-data}"
 ```
 
-Removing the data directory deletes local instances, downloads, runtimes, logs, and task history.
-It does not delete a Microsoft or Minecraft account.
+删除数据目录会删除本地实例、下载内容、运行时、日志和任务历史。它不会删除 Microsoft 或 Minecraft 账号。
 
-## Next steps
+## 下一步
 
-- [Quickstart](/zh/guide/quickstart) — create and launch your first instance.
-- [User guide](/zh/guide/user-guide) — commands, data layout, and network behavior.
+- [快速开始](/zh/guide/quickstart) —— 创建并启动第一个实例。
+- [用户指南](/zh/guide/user-guide) —— CLI、数据模型和工作流总览。
+- [CLI 参考](/zh/guide/cli) —— 完整命令参考。
+- [故障排查](/zh/guide/troubleshooting) —— 常见安装和启动错误。

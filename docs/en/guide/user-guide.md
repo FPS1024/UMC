@@ -1,73 +1,127 @@
-# UMC User Guide
+# Using UMC
 
-UMC is a headless engine for managing and launching Minecraft: Java Edition. It currently provides vanilla installation and explicit offline launch. Microsoft account authentication and authenticated online play are not implemented. Fabric, Forge, and NeoForge support currently stops at version discovery and installation preflight plans.
+UMC is a headless launcher engine for Minecraft: Java Edition. This section explains the everyday
+workflow with the `umc` CLI, what UMC writes to disk, and how to recover when something goes wrong.
 
-## Install and first run
+::: tip Scope of this release
 
-The current release target is Linux x86_64. Windows and macOS are planned ports.
+The current Linux x86_64 release supports **vanilla installation** and **explicit offline launch**.
+Microsoft authentication, authenticated online play, loader installation, and modpack management are
+not implemented yet.
 
-### Build from source
+:::
 
-Install Rust 1.89 or newer with `rustup`, then build from the repository root:
+## What you can do today
+
+- Discover official Minecraft Java Edition versions from Mojang metadata.
+- Create isolated instances with their own game directory and `instance.json`.
+- Download the client, libraries, assets, natives, and logging configuration with SHA-1 and size
+  verification.
+- Detect compatible Java, or provision a Mojang-managed runtime for a specific Minecraft version.
+- Launch an installed instance in offline mode and supervise the game process.
+- Inspect, cancel, and recover install tasks; list and stop game processes.
+- Repair instance configuration from a backup or a verified install record.
+- Serve the same operations over local JSON-RPC with `umcd`.
+
+## What is not available yet
+
+| Area | Current state |
+|---|---|
+| Microsoft account login | Not implemented |
+| Authenticated online play | Not implemented |
+| Fabric / Forge / NeoForge install and launch | Version discovery and preflight plans only |
+| Mods, modpacks, resource packs | Not implemented |
+| Windows and macOS | Planned ports; not part of the current release target |
+| In-game console input through UMC | Not available; game stdin is closed |
+
+## Core concepts
+
+| Concept | Meaning |
+|---|---|
+| **Version** | An official Minecraft version ID such as `1.21.1`, as listed by `umc version list`. |
+| **Instance** | An isolated configuration and game directory. Instances share downloaded versions, libraries, assets, and runtimes. |
+| **Task** | A persistent, sequenced operation such as installing an instance or a Java runtime. |
+| **Java runtime** | A managed runtime under `runtimes/`, or a system Java found through `JAVA_HOME` or `PATH`. |
+| **Process** | A game process launched by UMC, tracked by a UMC process ID and OS PID. |
+| **Data directory** | The root for instances, downloads, runtimes, tasks, processes, logs, and the daemon socket. |
+
+## Recommended workflow
 
 ```sh
-git clone https://github.com/FPS1024/UMC.git
-cd UMC
-cargo build --workspace --locked --release
-```
-
-The executables are `target/release/umc` and `target/release/umcd`. To install them into the current Rust user's binary directory instead:
-
-```sh
-cargo install --path crates/umc-cli --locked
-```
-
-### Download a release
-
-Download the Linux archive and matching `.sha256` checksum from the [GitHub Releases page](https://github.com/FPS1024/UMC/releases). Verify the checksum, extract the archive, and put `umc` and `umcd` in a directory on `PATH`. Development artifacts from GitHub Actions are available from each workflow run, expire after seven days, and are not stable releases.
-
-### First run
-
-Set `UMC_DATA_DIR` to choose where UMC stores managed data. If unset, development builds use `./umc-data` relative to the current working directory. Version lookup, game installation, and managed Java downloads require network access.
-
-Create and install a vanilla instance:
-
-```sh
+# 1. Choose a version
 umc version list
-umc instance create Survival 1.21.10
-umc instance list
+
+# 2. Create an isolated instance
+umc instance create Survival 1.21.1
+
+# 3. Install the game files (use the printed instance ID)
 umc instance install <instance-id>
-umc task get <task-id>
-umc instance repair <instance-id>
+
+# 4. Make sure Java 21 is available
 umc java detect 21
-umc java runtimes
-umc process list
+# or provision Mojang's runtime
+umc java install 1.21.1
+
+# 5. Launch offline
+umc launch <instance-id> Steve --offline
 ```
 
-Launch currently requires explicit offline mode:
+The install commands above wait for completion and print progress on stderr. Task commands such as
+`umc task get` require the local daemon; see [Tasks and the local daemon](./tasks-and-daemon).
 
-```sh
-umc launch <instance-id> Player --offline
-```
+## Command map
 
-Offline mode does not verify account ownership or enable authenticated multiplayer. Do not treat it as a Microsoft account login.
+| Goal | Command | Details |
+|---|---|---|
+| List Minecraft versions | `umc version list` | One version ID per line |
+| Create an instance | `umc instance create <name> <version>` | [Instances](./instances) |
+| List / inspect instances | `umc instance list`, `umc instance get <id>` | [Instances](./instances) |
+| Install or repair files | `umc instance install <id>` | [Instances](./instances) |
+| Repair configuration | `umc instance repair <id>` | [Instances](./instances) |
+| Remove an instance | `umc instance remove <id>` | [Instances](./instances) |
+| Detect Java | `umc java detect [minimum-major]` | [Java runtimes](./java) |
+| List managed runtimes | `umc java runtimes` | [Java runtimes](./java) |
+| Install a Mojang runtime | `umc java install <minecraft-version>` | [Java runtimes](./java) |
+| Launch offline | `umc launch <id> <username> --offline` | [Launching and processes](./launching) |
+| Inspect processes | `umc process list`, `umc process status <id>` | [Launching and processes](./launching) |
+| Stop a process | `umc process stop <id>` | [Launching and processes](./launching) |
+| Inspect tasks | `umc task get <id>`, `umc task events <id>` | Requires `umcd`; [Tasks and the local daemon](./tasks-and-daemon) |
+| Cancel a task | `umc task cancel <id>` | Requires `umcd` |
+| Start the daemon | `umcd` | [Tasks and the local daemon](./tasks-and-daemon) |
+| Start the stdio RPC adapter | `umc rpc --stdio` | [Developer integration](../development/) |
 
-To install an optional managed Java runtime for a Minecraft version, use `umc java install <minecraft-version>`. Install and runtime downloads return task IDs; use `umc task get <task-id>` to follow progress. `umcd` can keep running in the background so clients can inspect or cancel persistent tasks.
+## Two ways to run long operations
 
-## Local data and logs
+UMC has two execution paths:
 
-UMC stores instances, downloads, managed Java runtimes, task state, process state, and logs beneath the selected data directory. Game output is written to each instance's `logs/umc-console.log`. Logs can contain player names, local paths, Java output, or information printed by the game and mods; review them before sharing.
+1. **In-process CLI** — `umc instance install` and `umc java install` start a task inside the CLI
+   process, print progress, and wait for completion. Closing the CLI interrupts that task.
+2. **Local daemon / JSON-RPC** — `umcd` keeps the engine alive, returns a task ID immediately, and
+   lets clients inspect, cancel, and reconnect to tasks. `umc task ...` uses this path.
 
-Back up the data directory before manually editing or deleting files. Use UMC commands to remove instances and runtimes where possible, so running-process checks can be applied. Removing the data directory deletes the local managed data; it does not delete a Microsoft or Minecraft account.
+Do not start the same install through both the CLI and the daemon at the same time. UMC serializes
+operations inside one process, but the CLI and daemon are separate processes and do not share an
+in-process instance lock.
 
-## Network behavior
+## Data and safety
 
-Version lookup, game installation, and Java runtime installation make HTTPS requests to Mojang/Minecraft download infrastructure. Loader metadata requests go to Fabric Meta, Forge Maven, or NeoForge Maven as appropriate. UMC does not operate a proxy, account service, or telemetry endpoint in the current version. These remote services may receive ordinary connection metadata such as the client's IP address.
+Set `UMC_DATA_DIR` to choose the managed data root. If it is unset, development builds use
+`./umc-data` relative to the current working directory.
 
-`umcd` accepts local IPC requests from clients sharing the configured data directory. Keep that directory private. UMC does not expose a network listener for remote control.
+- Do not edit `instance.json` by hand. Use `umc instance repair` if it is damaged.
+- Game logs, task records, and process records can contain usernames, local paths, server addresses,
+  and game output. Review them before sharing.
+- Back up the data directory before manual cleanup. Stop running game processes and the daemon first.
+- Use UMC commands to remove instances and runtimes where possible so running-process checks are
+  applied.
 
-## Accounts and privacy
+See [Data, logs, and backups](./data-and-logs) for the full directory layout and backup guidance.
 
-Microsoft authentication is not currently available, and this version does not store Microsoft passwords, access tokens, or refresh tokens. When account support is implemented, the project will document the browser flow, token storage, account removal, and the requests made to Microsoft, Xbox, and Minecraft services before enabling it.
+## Next steps
 
-See [Project, Trademark, and Privacy Notes](../reference/legal-and-privacy.md) for the current privacy summary and project ownership boundaries.
+- [CLI reference](./cli) — every command, argument, and output convention.
+- [Instances](./instances) — create, install, repair, and remove instances.
+- [Java runtimes](./java) — detection, provisioning, and selection order.
+- [Launching and processes](./launching) — offline launch, logs, and process control.
+- [Troubleshooting](./troubleshooting) — common errors and recovery steps.
+- [JSON-RPC v1](../reference/rpc-v1) — integrate a GUI or another language.
