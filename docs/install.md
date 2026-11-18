@@ -1,6 +1,6 @@
 # Install UMC
 
-The current release target is Linux x86_64. Windows and macOS are future platform ports. CI produces an unsigned Linux archive and checksum as a short-lived development artifact, not a public versioned release.
+The current release target is Linux x86_64. Windows and macOS are future platform ports. The release workflow publishes an unsigned, versioned Linux archive and SHA-256 checksum.
 
 ## Build from source
 
@@ -22,7 +22,7 @@ This installs `umc` and `umcd` for the current user. Cargo manages the binaries 
 
 ## CI artifacts
 
-For a build from a branch, pull request, or tag, open the corresponding GitHub Actions run and download `umc-linux-x86_64`. Verify it with the included SHA-256 file, extract the tar archive, and place the `umc` and `umcd` binaries in a directory on `PATH`. Artifacts expire after seven days and should not be treated as stable releases.
+For development builds from a branch or pull request, open the corresponding GitHub Actions run and download `umc-linux-x86_64`. Artifacts expire after seven days and should not be treated as stable releases. For a versioned build, download the Linux archive and `.sha256` checksum from the [GitHub Releases page](https://github.com/FPS1024/UMC/releases), verify the checksum, extract the tar archive, and place `umc` and `umcd` in a directory on `PATH`.
 
 ## First run
 

@@ -15,7 +15,7 @@ jobs:
     name: Format
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo fmt --all -- --check
 
@@ -23,7 +23,7 @@ jobs:
     name: Minimum Rust version (1.89)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@1.89.0
       - run: cargo check --workspace --locked
 
@@ -31,7 +31,7 @@ jobs:
     name: Build (Linux x86_64)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-gnu
@@ -49,7 +49,7 @@ jobs:
           tar -C dist -czf dist/umc-linux-x86_64.tar.gz umc-linux-x86_64
           sha256sum dist/umc-linux-x86_64.tar.gz > dist/umc-linux-x86_64.tar.gz.sha256
       - name: Upload Linux release candidate
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: umc-linux-x86_64
           path: |

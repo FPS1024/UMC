@@ -20,14 +20,14 @@ Rust crate versions and the JSON-RPC protocol version evolve independently.
 
 ## CI and artifacts
 
-`.github/workflows/ci.yml` checks formatting and the declared MSRV, then builds Linux x86_64 release binaries. It packages `umc`, `umcd`, the MIT license, and install instructions in a tar archive and uploads the archive with a SHA-256 checksum for seven days. Windows and macOS are intentionally left out of the active matrix. The workflow does not publish a GitHub Release, sign binaries, or publish Rust crates.
+`.github/workflows/ci.yml` checks formatting and the declared MSRV, then builds Linux x86_64 release binaries. It packages `umc`, `umcd`, the MIT license, and install instructions in a tar archive and uploads the archive with a SHA-256 checksum for seven days. `.github/workflows/release.yml` validates that the pushed `v*` tag matches the Cargo package version, then builds and publishes a versioned Linux x86_64 GNU archive and checksum as a GitHub Release. Windows and macOS are intentionally left out of the active matrix. Releases are unsigned, and Rust crates are not published to crates.io.
 
 Before creating a public release:
 
 1. Document third-party notices for bundled dependencies and Mojang assets.
 2. Review the RPC v1 contract, error mappings, and instance migration policy for the release.
 3. Keep Linux install, daemon permissions, reconnect, launch, stop, and vanilla install behavior validated on a native runner.
-4. Create a versioned Linux release archive from the verified workflow output. Add signing only after release key ownership and storage are defined.
+4. Add signing only after release key ownership and storage are defined.
 5. Re-enable Windows and macOS CI/runtime validation when those ports are scheduled.
 
 ## License
