@@ -20,6 +20,7 @@ const englishNav = [
   { text: 'Guide', link: '/en/guide/quickstart', activeMatch: '^/en/guide/' },
   { text: 'Development', link: '/en/development/', activeMatch: '^/en/development/' },
   { text: 'Reference', link: '/en/reference/rpc-v1', activeMatch: '^/en/reference/' },
+  { text: 'Services', link: '/en/services/', activeMatch: '^/en/services/' },
   {
     text: 'About',
     link: '/en/about/',
@@ -32,6 +33,7 @@ const chineseNav = [
   { text: '引导', link: '/zh/guide/quickstart', activeMatch: '^/zh/guide/' },
   { text: '开发文档', link: '/zh/development/', activeMatch: '^/zh/development/' },
   { text: '参考', link: '/zh/reference/rpc-v1', activeMatch: '^/zh/reference/' },
+  { text: '服务', link: '/zh/services/', activeMatch: '^/zh/services/' },
   {
     text: '关于',
     link: '/zh/about/',
@@ -74,6 +76,17 @@ const englishSidebar = {
         { text: 'JSON-RPC client guide', link: '/en/development/rpc-client' },
         { text: 'Testing and CI', link: '/en/development/testing' },
         { text: 'Contributing', link: '/en/development/contributing' },
+      ],
+    },
+  ],
+  '/en/services/': [
+    {
+      text: 'Services',
+      items: [
+        { text: 'Overview', link: '/en/services/' },
+        { text: 'UMC Auth', link: '/en/services/auth' },
+        { text: 'Mirror', link: '/en/services/mirror' },
+        { text: 'Skin designer', link: '/en/services/skindesigner' },
       ],
     },
   ],
@@ -138,6 +151,17 @@ const chineseSidebar = {
         { text: 'JSON-RPC 客户端指南', link: '/zh/development/rpc-client' },
         { text: '测试与 CI', link: '/zh/development/testing' },
         { text: '贡献指南', link: '/zh/development/contributing' },
+      ],
+    },
+  ],
+  '/zh/services/': [
+    {
+      text: '服务',
+      items: [
+        { text: '概览', link: '/zh/services/' },
+        { text: 'UMC Auth', link: '/zh/services/auth' },
+        { text: '镜像站', link: '/zh/services/mirror' },
+        { text: '皮肤设计器', link: '/zh/services/skindesigner' },
       ],
     },
   ],
