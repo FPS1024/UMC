@@ -52,13 +52,6 @@ const englishSidebar = {
         { text: 'Troubleshooting', link: '/en/guide/troubleshooting' },
       ],
     },
-    {
-      text: 'Reference',
-      items: [
-        { text: 'JSON-RPC v1', link: '/en/reference/rpc-v1' },
-        { text: 'Release policy', link: '/en/reference/release' },
-      ],
-    },
   ],
   '/en/development/': [
     {
@@ -73,13 +66,6 @@ const englishSidebar = {
         { text: 'Contributing', link: '/en/development/contributing' },
       ],
     },
-    {
-      text: 'Reference',
-      items: [
-        { text: 'JSON-RPC v1', link: '/en/reference/rpc-v1' },
-        { text: 'Release notes — v0.1.0', link: '/en/reference/releases/v0.1.0' },
-      ],
-    },
   ],
   '/en/reference/': [
     {
@@ -90,14 +76,6 @@ const englishSidebar = {
         { text: 'Terms of Service', link: '/en/reference/terms' },
         { text: 'Privacy Policy', link: '/en/reference/privacy' },
         { text: 'Release notes — v0.1.0', link: '/en/reference/releases/v0.1.0' },
-      ],
-    },
-    {
-      text: 'Develop',
-      items: [
-        { text: 'Integration guide', link: '/en/development/' },
-        { text: 'Rust SDK', link: '/en/development/sdk' },
-        { text: 'Architecture', link: '/en/development/architecture' },
       ],
     },
   ],
@@ -125,13 +103,6 @@ const chineseSidebar = {
         { text: '故障排查', link: '/zh/guide/troubleshooting' },
       ],
     },
-    {
-      text: '参考',
-      items: [
-        { text: 'JSON-RPC v1', link: '/zh/reference/rpc-v1' },
-        { text: '发布策略', link: '/zh/reference/release' },
-      ],
-    },
   ],
   '/zh/development/': [
     {
@@ -146,13 +117,6 @@ const chineseSidebar = {
         { text: '贡献指南', link: '/zh/development/contributing' },
       ],
     },
-    {
-      text: '参考',
-      items: [
-        { text: 'JSON-RPC v1', link: '/zh/reference/rpc-v1' },
-        { text: '发布说明 — v0.1.0', link: '/zh/reference/releases/v0.1.0' },
-      ],
-    },
   ],
   '/zh/reference/': [
     {
@@ -163,14 +127,6 @@ const chineseSidebar = {
         { text: '服务条款', link: '/zh/reference/terms' },
         { text: '隐私政策', link: '/zh/reference/privacy' },
         { text: '发布说明 — v0.1.0', link: '/zh/reference/releases/v0.1.0' },
-      ],
-    },
-    {
-      text: '开发',
-      items: [
-        { text: '集成指南', link: '/zh/development/' },
-        { text: 'Rust SDK', link: '/zh/development/sdk' },
-        { text: '架构', link: '/zh/development/architecture' },
       ],
     },
   ],
