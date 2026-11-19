@@ -116,6 +116,18 @@ Java provisioning, logs, and first-run details.
 > [!WARNING]
 > Offline launch does not verify account ownership and cannot join authenticated servers. Use `umc auth login` plus `umc launch --online` for online play. UMC stores only the Microsoft refresh token in the OS keyring (or a `0600` file fallback) and never stores your password.
 
+## Optional companion services
+
+UMC also ships independently deployable services under [`services/`](services/):
+
+| Service | Status | Purpose |
+|---|---|---|
+| [Auth server](services/auth/) | Initial implementation | Self-hosted Go/PostgreSQL registration and Yggdrasil-compatible authentication for Minecraft communities |
+| Mirror | Planned | Download mirror for versions, libraries, assets, and Java runtimes |
+| Skin designer | Planned | Web skin editor and texture host |
+
+Each service has its own Docker image and is optional; `umc` and `umcd` do not require them.
+
 ## Documentation
 
 | User documentation | Developer documentation | Reference |

@@ -8,3 +8,7 @@ node_modules/
 /docs/.vitepress/cache/
 /docs/.vitepress/dist/
 /docs/en/reference/rpc-v1.md
+
+/services/auth/.env
+/services/auth/umc-auth
+/services/auth/umc-auth-image.tar.gz*
