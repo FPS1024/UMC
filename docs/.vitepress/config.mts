@@ -22,13 +22,8 @@ const englishNav = [
   { text: 'Reference', link: '/en/reference/rpc-v1', activeMatch: '^/en/reference/' },
   {
     text: 'About',
+    link: '/en/about/',
     activeMatch: '^/en/about/',
-    items: [
-      { text: 'About UMC', link: '/en/about/' },
-      { text: 'Compatibility policy', link: '/en/about/compatibility' },
-      { text: 'Privacy Policy', link: '/en/about/privacy' },
-      { text: 'Terms of Service', link: '/en/about/terms' },
-    ],
   },
   { text: 'Download', link: releases },
 ]
@@ -39,13 +34,8 @@ const chineseNav = [
   { text: '参考', link: '/zh/reference/rpc-v1', activeMatch: '^/zh/reference/' },
   {
     text: '关于',
+    link: '/zh/about/',
     activeMatch: '^/zh/about/',
-    items: [
-      { text: '关于 UMC', link: '/zh/about/' },
-      { text: '兼容性策略', link: '/zh/about/compatibility' },
-      { text: '隐私政策', link: '/zh/about/privacy' },
-      { text: '服务条款', link: '/zh/about/terms' },
-    ],
   },
   { text: '下载', link: releases },
 ]
