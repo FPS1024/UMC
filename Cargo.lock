@@ -934,6 +934,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha2"
+version = "0.10.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7507d819769d01a365ab707794a4084392c824f54a7a6a7862f8c3d0892b283"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.2.17",
+ "digest",
+]
+
+[[package]]
 name = "shell-words"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1211,6 +1222,7 @@ dependencies = [
 name = "umc-core"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "futures-util",
  "libc",
  "md5",
@@ -1218,11 +1230,13 @@ dependencies = [
  "serde",
  "serde_json",
  "sha1",
+ "sha2",
  "shell-words",
  "tokio",
  "umc-api",
  "umc-loader-api",
  "umc-loader-registry",
+ "url",
  "uuid",
  "zip",
 ]

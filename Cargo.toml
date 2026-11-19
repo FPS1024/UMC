@@ -29,6 +29,8 @@ async-trait = "0.1"
 quick-xml = "0.38"
 url = "2"
 sha1 = "0.10"
+sha2 = "0.10"
+base64 = "0.22"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 md5 = "0.7"

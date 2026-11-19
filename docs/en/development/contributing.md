@@ -109,7 +109,8 @@ Windows and macOS are not in the validated release target. Releases are currentl
 
 UMC is licensed under MIT. Do not add Minecraft game files, Mojang/Microsoft logos, or third-party
 content that you do not have the right to redistribute. Do not imply official affiliation with
-Mojang or Microsoft. See [Legal and privacy](../reference/legal-and-privacy).
+Mojang or Microsoft. See the [Terms of Service](../reference/terms) and
+[Privacy Policy](../reference/privacy).
 
 ## Reporting issues
 

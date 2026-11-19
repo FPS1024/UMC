@@ -10,6 +10,7 @@ use umc_api::{
 };
 use umc_loader_api::{LoaderId, LoaderInstallRequest};
 use umc_loader_registry::LoaderRegistry;
+pub mod auth;
 mod daemon;
 mod engine;
 mod tasks;

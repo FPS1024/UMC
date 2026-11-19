@@ -165,7 +165,7 @@ UMC 在一个进程内串行化操作，并限制安装和下载并发。它不�
 
 UMC 使用 MIT 许可证。再分发 UMC 或其重要部分时，请保留版权和许可证文本。在应用包中包含许可证，例如 `licenses/` 目录或 About/Legal 页面。
 
-“Powered by UMC Core”是可选的社区署名，不是 MIT 要求。不要暗示 UMC 为集成应用背书。参见 [项目、商标与隐私说明](../reference/legal-and-privacy)。
+“Powered by UMC Core”是可选的社区署名，不是 MIT 要求。不要暗示 UMC 为集成应用背书。参见[服务条款](../reference/terms)和[隐私政策](../reference/privacy)。
 
 集成应用仍需自行说明其遥测、网络请求、账号处理和隐私实践。
 

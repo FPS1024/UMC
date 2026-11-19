@@ -333,8 +333,69 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
+        "auth" => {
+            let subcommand = args.next().unwrap_or_default();
+            if subcommand != "login" {
+                return Err("usage: umc auth login [--no-browser] [--redirect-uri <uri>]".into());
+            }
+            let mut open_browser = true;
+            let mut redirect_uri = None;
+            while let Some(argument) = args.next() {
+                match argument.as_str() {
+                    "--no-browser" => open_browser = false,
+                    "--redirect-uri" => {
+                        redirect_uri = Some(args.next().ok_or("--redirect-uri requires a value")?);
+                    }
+                    other => return Err(format!("Unknown auth option: {other}").into()),
+                }
+            }
+
+            let mut config = umc_core::auth::MicrosoftOAuthConfig::default();
+            if let Some(uri) = redirect_uri {
+                config.redirect_uri = uri;
+            }
+
+            let flow = umc_core::auth::LoginFlow::start_with_config(config, open_browser)
+                .await
+                .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
+            eprintln!("Redirect URI: {}", flow.redirect_uri());
+            eprintln!("Microsoft sign-in URL:\n{}\n", flow.auth_url());
+            if let Some(error) = flow.browser_error() {
+                eprintln!("Could not open the browser automatically: {error}");
+                eprintln!("Open the URL above manually to continue.");
+            }
+            eprintln!("Waiting for the Microsoft sign-in callback...");
+
+            let oauth = flow
+                .wait()
+                .await
+                .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
+            println!("Microsoft OAuth complete.");
+
+            let session = umc_core::auth::complete_minecraft_login_with_progress(&oauth, |stage| {
+                eprintln!("{stage}...")
+            })
+            .await
+            .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
+
+            println!("Minecraft login complete.");
+            println!("Account: {} ({})", session.profile.name, session.profile.id);
+            println!(
+                "Minecraft token expires in: {} seconds",
+                session.minecraft_expires_in.unwrap_or(0)
+            );
+            println!(
+                "Microsoft refresh token: {}",
+                if session.microsoft_refresh_token.is_some() {
+                    "received"
+                } else {
+                    "not returned"
+                }
+            );
+            println!("Tokens are not persisted by this step.");
+        }
         _ => println!(
-            "UMC — Universal Minecraft Core\n\nCommands:\n  umc version list\n  umc instance create <name> <version>\n  umc instance list|get|install|remove|repair <instance-id>\n  umc java detect [minimum-major]\n  umc java runtimes|install|remove ...\n  umc task get|cancel|events <task-id>\n  umc process list|status|stop ...\n  umc launch <instance-id> <username> --offline\n  umc rpc --stdio\n  umcd  (start local IPC daemon)\n\nSet UMC_DATA_DIR to choose the data directory."
+            "UMC — Universal Minecraft Core\n\nCommands:\n  umc version list\n  umc instance create <name> <version>\n  umc instance list|get|install|remove|repair <instance-id>\n  umc java detect [minimum-major]\n  umc java runtimes|install|remove ...\n  umc task get|cancel|events <task-id>\n  umc process list|status|stop ...\n  umc launch <instance-id> <username> --offline\n  umc auth login [--no-browser] [--redirect-uri <uri>]\n  umc rpc --stdio\n  umcd  (start local IPC daemon)\n\nSet UMC_DATA_DIR to choose the data directory."
         ),
     }
     Ok(())

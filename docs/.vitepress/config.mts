@@ -87,7 +87,8 @@ const englishSidebar = {
       items: [
         { text: 'JSON-RPC v1', link: '/en/reference/rpc-v1' },
         { text: 'Release policy', link: '/en/reference/release' },
-        { text: 'Legal and privacy', link: '/en/reference/legal-and-privacy' },
+        { text: 'Terms of Service', link: '/en/reference/terms' },
+        { text: 'Privacy Policy', link: '/en/reference/privacy' },
         { text: 'Release notes — v0.1.0', link: '/en/reference/releases/v0.1.0' },
       ],
     },
@@ -159,7 +160,8 @@ const chineseSidebar = {
       items: [
         { text: 'JSON-RPC v1', link: '/zh/reference/rpc-v1' },
         { text: '发布策略', link: '/zh/reference/release' },
-        { text: '法律与隐私', link: '/zh/reference/legal-and-privacy' },
+        { text: '服务条款', link: '/zh/reference/terms' },
+        { text: '隐私政策', link: '/zh/reference/privacy' },
         { text: '发布说明 — v0.1.0', link: '/zh/reference/releases/v0.1.0' },
       ],
     },
