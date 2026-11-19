@@ -325,4 +325,4 @@ let launcher = Launcher::builder()
 
 ## 稳定性
 
-SDK 遵循工作区的 SemVer 策略。1.0 之前，破坏性变更需要新的次版本。JSON-RPC 契约独立版本化（`v1`）。参见 [发布策略](../reference/release)。
+SDK 遵循工作区的 SemVer 策略。1.0 之前，破坏性变更需要新的次版本。JSON-RPC 契约独立版本化（`v1`）。参见 [兼容性策略](../about/compatibility)。

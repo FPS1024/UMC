@@ -103,14 +103,14 @@ coverage and the manual validation checklist.
 5. The release workflow builds and publishes the Linux archive and checksum.
 
 Windows and macOS are not in the validated release target. Releases are currently unsigned. See the
-[release policy](../reference/release).
+[compatibility policy](../about/compatibility).
 
 ## License and project boundaries
 
 UMC is licensed under MIT. Do not add Minecraft game files, Mojang/Microsoft logos, or third-party
 content that you do not have the right to redistribute. Do not imply official affiliation with
-Mojang or Microsoft. See the [Terms of Service](../reference/terms) and
-[Privacy Policy](../reference/privacy).
+Mojang or Microsoft. See the [Terms of Service](../about/terms) and
+[Privacy Policy](../about/privacy).
 
 ## Reporting issues
 

@@ -126,4 +126,4 @@ account. Use `--online` for authenticated play.
 - [Rust SDK](/en/development/sdk) — embed UMC Core in a Rust application.
 - [Integration guide](/en/development/) — choose between the SDK, CLI, and JSON-RPC.
 - [JSON-RPC v1](/en/reference/rpc-v1) — full method and task semantics.
-- [Release policy](/en/reference/release) — platform support and compatibility promises.
+- [Compatibility policy](/en/about/compatibility) — platform support and compatibility promises.

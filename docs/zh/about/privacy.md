@@ -1,5 +1,5 @@
 ---
-source: en/reference/privacy.md
+source: en/about/privacy.md
 ---
 
 # 隐私政策

@@ -1,8 +1,8 @@
 ---
-source: en/reference/release.md
+source: en/about/compatibility.md
 ---
 
-# 发布与兼容性策略
+# 兼容性与发布策略
 
 ## 支持基线
 

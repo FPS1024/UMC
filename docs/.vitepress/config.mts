@@ -20,6 +20,16 @@ const englishNav = [
   { text: 'Guide', link: '/en/guide/quickstart', activeMatch: '^/en/guide/' },
   { text: 'Development', link: '/en/development/', activeMatch: '^/en/development/' },
   { text: 'Reference', link: '/en/reference/rpc-v1', activeMatch: '^/en/reference/' },
+  {
+    text: 'About',
+    activeMatch: '^/en/about/',
+    items: [
+      { text: 'About UMC', link: '/en/about/' },
+      { text: 'Compatibility policy', link: '/en/about/compatibility' },
+      { text: 'Privacy Policy', link: '/en/about/privacy' },
+      { text: 'Terms of Service', link: '/en/about/terms' },
+    ],
+  },
   { text: 'Download', link: releases },
 ]
 
@@ -27,6 +37,16 @@ const chineseNav = [
   { text: '引导', link: '/zh/guide/quickstart', activeMatch: '^/zh/guide/' },
   { text: '开发文档', link: '/zh/development/', activeMatch: '^/zh/development/' },
   { text: '参考', link: '/zh/reference/rpc-v1', activeMatch: '^/zh/reference/' },
+  {
+    text: '关于',
+    activeMatch: '^/zh/about/',
+    items: [
+      { text: '关于 UMC', link: '/zh/about/' },
+      { text: '兼容性策略', link: '/zh/about/compatibility' },
+      { text: '隐私政策', link: '/zh/about/privacy' },
+      { text: '服务条款', link: '/zh/about/terms' },
+    ],
+  },
   { text: '下载', link: releases },
 ]
 
@@ -67,14 +87,27 @@ const englishSidebar = {
       ],
     },
   ],
+  '/en/about/': [
+    {
+      text: 'About',
+      items: [
+        { text: 'About UMC', link: '/en/about/' },
+        { text: 'Compatibility policy', link: '/en/about/compatibility' },
+        { text: 'Privacy Policy', link: '/en/about/privacy' },
+        { text: 'Terms of Service', link: '/en/about/terms' },
+      ],
+    },
+  ],
   '/en/reference/': [
     {
       text: 'Reference',
       items: [
         { text: 'JSON-RPC v1', link: '/en/reference/rpc-v1' },
-        { text: 'Release policy', link: '/en/reference/release' },
-        { text: 'Terms of Service', link: '/en/reference/terms' },
-        { text: 'Privacy Policy', link: '/en/reference/privacy' },
+      ],
+    },
+    {
+      text: 'Release notes',
+      items: [
         { text: 'Release notes — v0.1.0', link: '/en/reference/releases/v0.1.0' },
       ],
     },
@@ -118,14 +151,27 @@ const chineseSidebar = {
       ],
     },
   ],
+  '/zh/about/': [
+    {
+      text: '关于',
+      items: [
+        { text: '关于 UMC', link: '/zh/about/' },
+        { text: '兼容性策略', link: '/zh/about/compatibility' },
+        { text: '隐私政策', link: '/zh/about/privacy' },
+        { text: '服务条款', link: '/zh/about/terms' },
+      ],
+    },
+  ],
   '/zh/reference/': [
     {
       text: '参考',
       items: [
         { text: 'JSON-RPC v1', link: '/zh/reference/rpc-v1' },
-        { text: '发布策略', link: '/zh/reference/release' },
-        { text: '服务条款', link: '/zh/reference/terms' },
-        { text: '隐私政策', link: '/zh/reference/privacy' },
+      ],
+    },
+    {
+      text: '发布说明',
+      items: [
         { text: '发布说明 — v0.1.0', link: '/zh/reference/releases/v0.1.0' },
       ],
     },

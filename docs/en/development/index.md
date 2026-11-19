@@ -192,8 +192,8 @@ substantial portions of it. Include the license in application packages, such as
 folder or an About/Legal screen.
 
 “Powered by UMC Core” is an optional community credit, not an MIT requirement. Do not imply that
-UMC endorses the integrating application. See the [Terms of Service](../reference/terms) and
-[Privacy Policy](../reference/privacy).
+UMC endorses the integrating application. See the [Terms of Service](../about/terms) and
+[Privacy Policy](../about/privacy).
 
 The integrating application remains responsible for documenting its own telemetry, network
 requests, account handling, and privacy practices.

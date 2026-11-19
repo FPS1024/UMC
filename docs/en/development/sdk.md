@@ -341,4 +341,4 @@ diagnostics. Map it to your own user-facing error categories rather than display
 
 The SDK follows the workspace SemVer policy. Before 1.0, breaking changes require a new minor
 version. The JSON-RPC contract is versioned independently (`v1`). See the
-[release policy](../reference/release).
+[compatibility policy](../about/compatibility).

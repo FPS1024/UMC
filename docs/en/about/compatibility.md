@@ -1,4 +1,4 @@
-# Release and compatibility policy
+# Compatibility and release policy
 
 ## Support baseline
 

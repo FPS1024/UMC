@@ -121,4 +121,4 @@ umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 --offline Steve
 - [Rust SDK](/zh/development/sdk) —— 在 Rust 应用中嵌入 UMC Core。
 - [集成指南](/zh/development/) —— 在 SDK、CLI 和 JSON-RPC 之间选择。
 - [JSON-RPC v1](/zh/reference/rpc-v1) —— 完整的方法和任务语义。
-- [发布策略](/zh/reference/release) —— 平台支持与兼容性承诺。
+- [兼容性策略](/zh/about/compatibility) —— 平台支持与兼容性承诺。

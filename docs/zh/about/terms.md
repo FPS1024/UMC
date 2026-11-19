@@ -1,5 +1,5 @@
 ---
-source: en/reference/terms.md
+source: en/about/terms.md
 ---
 
 # 服务条款

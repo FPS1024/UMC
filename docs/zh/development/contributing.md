@@ -99,11 +99,11 @@ export UMC_DATA_DIR="$(mktemp -d)"
 4. 推送 `v*` 标签。
 5. 发布工作流构建并发布 Linux 压缩包和校验和。
 
-Windows 和 macOS 不在验证的发布目标中。发布包当前未签名。参见 [发布策略](../reference/release)。
+Windows 和 macOS 不在验证的发布目标中。发布包当前未签名。参见 [兼容性策略](../about/compatibility)。
 
 ## 许可证与项目边界
 
-UMC 使用 MIT 许可证。不要加入 Minecraft 游戏文件、Mojang/Microsoft 徽标或你无权再分发的第三方内容。不要暗示与 Mojang 或 Microsoft 存在官方关联。参见[服务条款](../reference/terms)和[隐私政策](../reference/privacy)。
+UMC 使用 MIT 许可证。不要加入 Minecraft 游戏文件、Mojang/Microsoft 徽标或你无权再分发的第三方内容。不要暗示与 Mojang 或 Microsoft 存在官方关联。参见[服务条款](../about/terms)和[隐私政策](../about/privacy)。
 
 ## 报告问题
 
