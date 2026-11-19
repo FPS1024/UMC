@@ -74,6 +74,19 @@ async fn wait_for_task(
     }
 }
 
+fn parse_account_flag(args: &mut impl Iterator<Item = String>) -> Result<Option<String>, String> {
+    let mut account = None;
+    while let Some(argument) = args.next() {
+        match argument.as_str() {
+            "--account" => {
+                account = Some(args.next().ok_or("--account requires a value")?);
+            }
+            other => return Err(format!("Unknown option: {other}")),
+        }
+    }
+    Ok(account)
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1);
@@ -294,16 +307,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("{}", serde_json::to_string_pretty(&result)?);
         }
         "launch" => {
-            let instance_id = args
-                .next()
-                .ok_or("usage: umc launch <instance-id> <offline-username> --offline")?;
-            let username = args
-                .next()
-                .ok_or("usage: umc launch <instance-id> <offline-username> --offline")?;
-            if args.next().as_deref() != Some("--offline") {
-                return Err("Offline launch must be explicitly enabled with --offline".into());
+            let instance_id = args.next().ok_or(
+                "usage: umc launch <instance-id> (--offline <username> | --online [--account <id>])",
+            )?;
+            let mut offline = false;
+            let mut online = false;
+            let mut username = None;
+            let mut account_id = None;
+            while let Some(argument) = args.next() {
+                match argument.as_str() {
+                    "--offline" => offline = true,
+                    "--online" => online = true,
+                    "--account" => {
+                        account_id = Some(args.next().ok_or("--account requires a value")?);
+                    }
+                    other if !other.starts_with("--") => {
+                        if username.replace(other.to_owned()).is_some() {
+                            return Err("Only one offline username may be provided".into());
+                        }
+                    }
+                    other => return Err(format!("Unknown launch option: {other}").into()),
+                }
             }
-            let response = UmcCore::new(data_dir.clone()).dispatch(RpcRequest { jsonrpc: "2.0".into(), id: Some(serde_json::json!(3)), method: "launch.start".into(), params: serde_json::json!({"instance_id":instance_id,"username":username,"offline_mode":true}) }).await;
+            let (username, offline_mode) = match (offline, online) {
+                (true, true) => {
+                    return Err("Choose either --offline or --online, not both".into());
+                }
+                (true, false) => (
+                    username.ok_or("usage: umc launch <instance-id> --offline <username>")?,
+                    true,
+                ),
+                (false, true) => (String::new(), false),
+                (false, false) => {
+                    return Err(
+                        "usage: umc launch <instance-id> (--offline <username> | --online [--account <id>])"
+                            .into(),
+                    );
+                }
+            };
+            let core = UmcCore::new(data_dir.clone());
+            let response = core.dispatch(RpcRequest { jsonrpc: "2.0".into(), id: Some(serde_json::json!(3)), method: "launch.start".into(), params: serde_json::json!({"instance_id":instance_id,"username":username,"offline_mode":offline_mode,"account_id":account_id}) }).await;
             if let Some(err) = response.error {
                 return Err(err.message.into());
             }
@@ -315,7 +358,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .to_owned();
             loop {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-                let status = UmcCore::new(data_dir.clone())
+                let status = core
                     .dispatch(RpcRequest {
                         jsonrpc: "2.0".into(),
                         id: Some(serde_json::json!(4)),
@@ -335,67 +378,127 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         "auth" => {
             let subcommand = args.next().unwrap_or_default();
-            if subcommand != "login" {
-                return Err("usage: umc auth login [--no-browser] [--redirect-uri <uri>]".into());
-            }
-            let mut open_browser = true;
-            let mut redirect_uri = None;
-            while let Some(argument) = args.next() {
-                match argument.as_str() {
-                    "--no-browser" => open_browser = false,
-                    "--redirect-uri" => {
-                        redirect_uri = Some(args.next().ok_or("--redirect-uri requires a value")?);
+            match subcommand.as_str() {
+                "login" => {
+                    let mut open_browser = true;
+                    let mut redirect_uri = None;
+                    while let Some(argument) = args.next() {
+                        match argument.as_str() {
+                            "--no-browser" => open_browser = false,
+                            "--redirect-uri" => {
+                                redirect_uri =
+                                    Some(args.next().ok_or("--redirect-uri requires a value")?);
+                            }
+                            other => return Err(format!("Unknown auth option: {other}").into()),
+                        }
                     }
-                    other => return Err(format!("Unknown auth option: {other}").into()),
+
+                    let mut config = umc_core::auth::MicrosoftOAuthConfig::default();
+                    if let Some(uri) = redirect_uri {
+                        config.redirect_uri = uri;
+                    }
+                    let auth = umc_core::auth::AuthManager::new(data_dir.clone(), config.clone());
+
+                    let flow = umc_core::auth::LoginFlow::start_with_config(config, open_browser)
+                        .await
+                        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
+                    eprintln!("Redirect URI: {}", flow.redirect_uri());
+                    eprintln!("Microsoft sign-in URL:\n{}\n", flow.auth_url());
+                    if let Some(error) = flow.browser_error() {
+                        eprintln!("Could not open the browser automatically: {error}");
+                        eprintln!("Open the URL above manually to continue.");
+                    }
+                    eprintln!("Waiting for the Microsoft sign-in callback...");
+
+                    let oauth = flow
+                        .wait()
+                        .await
+                        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
+                    println!("Microsoft OAuth complete.");
+
+                    let session =
+                        umc_core::auth::complete_minecraft_login_with_progress(&oauth, |stage| {
+                            eprintln!("{stage}...")
+                        })
+                        .await
+                        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
+
+                    println!("Minecraft login complete.");
+                    println!("Account: {} ({})", session.profile.name, session.profile.id);
+                    println!(
+                        "Minecraft token expires in: {} seconds",
+                        session.minecraft_expires_in.unwrap_or(0)
+                    );
+                    let (record, warning) = auth
+                        .save_session(&session)
+                        .await
+                        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
+                    if let Some(warning) = warning {
+                        eprintln!("{warning}");
+                    }
+                    println!("Credentials stored using {}.", auth.credential_backend());
+                    println!("Default account: {}", record.username);
+                }
+                "status" => {
+                    let auth = umc_core::auth::AuthManager::new(
+                        data_dir.clone(),
+                        umc_core::auth::MicrosoftOAuthConfig::default(),
+                    );
+                    let status = auth
+                        .status()
+                        .await
+                        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
+                    println!("{}", serde_json::to_string_pretty(&status)?);
+                }
+                "accounts" => {
+                    let auth = umc_core::auth::AuthManager::new(
+                        data_dir.clone(),
+                        umc_core::auth::MicrosoftOAuthConfig::default(),
+                    );
+                    let accounts = auth
+                        .accounts()
+                        .await
+                        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
+                    println!("{}", serde_json::to_string_pretty(&accounts)?);
+                }
+                "refresh" => {
+                    let account_id = parse_account_flag(&mut args)?;
+                    let auth = umc_core::auth::AuthManager::new(
+                        data_dir.clone(),
+                        umc_core::auth::MicrosoftOAuthConfig::default(),
+                    );
+                    let session = auth
+                        .refresh_session(account_id.as_deref(), |stage| eprintln!("{stage}..."))
+                        .await
+                        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
+                    println!(
+                        "Session refreshed for {} ({})",
+                        session.profile.name, session.profile.id
+                    );
+                    println!(
+                        "Minecraft token expires in: {} seconds",
+                        session.minecraft_expires_in.unwrap_or(0)
+                    );
+                }
+                "logout" => {
+                    let account_id = parse_account_flag(&mut args)?;
+                    let auth = umc_core::auth::AuthManager::new(
+                        data_dir.clone(),
+                        umc_core::auth::MicrosoftOAuthConfig::default(),
+                    );
+                    let account_id = auth
+                        .logout(account_id.as_deref())
+                        .await
+                        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
+                    println!("Removed the stored credential for {account_id}");
+                }
+                _ => {
+                    return Err("usage: umc auth <login [--no-browser] [--redirect-uri <uri>]|status|accounts|refresh [--account <id>]|logout [--account <id>]>".into());
                 }
             }
-
-            let mut config = umc_core::auth::MicrosoftOAuthConfig::default();
-            if let Some(uri) = redirect_uri {
-                config.redirect_uri = uri;
-            }
-
-            let flow = umc_core::auth::LoginFlow::start_with_config(config, open_browser)
-                .await
-                .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
-            eprintln!("Redirect URI: {}", flow.redirect_uri());
-            eprintln!("Microsoft sign-in URL:\n{}\n", flow.auth_url());
-            if let Some(error) = flow.browser_error() {
-                eprintln!("Could not open the browser automatically: {error}");
-                eprintln!("Open the URL above manually to continue.");
-            }
-            eprintln!("Waiting for the Microsoft sign-in callback...");
-
-            let oauth = flow
-                .wait()
-                .await
-                .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
-            println!("Microsoft OAuth complete.");
-
-            let session = umc_core::auth::complete_minecraft_login_with_progress(&oauth, |stage| {
-                eprintln!("{stage}...")
-            })
-            .await
-            .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
-
-            println!("Minecraft login complete.");
-            println!("Account: {} ({})", session.profile.name, session.profile.id);
-            println!(
-                "Minecraft token expires in: {} seconds",
-                session.minecraft_expires_in.unwrap_or(0)
-            );
-            println!(
-                "Microsoft refresh token: {}",
-                if session.microsoft_refresh_token.is_some() {
-                    "received"
-                } else {
-                    "not returned"
-                }
-            );
-            println!("Tokens are not persisted by this step.");
         }
         _ => println!(
-            "UMC — Universal Minecraft Core\n\nCommands:\n  umc version list\n  umc instance create <name> <version>\n  umc instance list|get|install|remove|repair <instance-id>\n  umc java detect [minimum-major]\n  umc java runtimes|install|remove ...\n  umc task get|cancel|events <task-id>\n  umc process list|status|stop ...\n  umc launch <instance-id> <username> --offline\n  umc auth login [--no-browser] [--redirect-uri <uri>]\n  umc rpc --stdio\n  umcd  (start local IPC daemon)\n\nSet UMC_DATA_DIR to choose the data directory."
+            "UMC — Universal Minecraft Core\n\nCommands:\n  umc version list\n  umc instance create <name> <version>\n  umc instance list|get|install|remove|repair <instance-id>\n  umc java detect [minimum-major]\n  umc java runtimes|install|remove ...\n  umc task get|cancel|events <task-id>\n  umc process list|status|stop ...\n  umc launch <instance-id> --offline <username>\n  umc launch <instance-id> --online [--account <account-id>]\n  umc auth login [--no-browser] [--redirect-uri <uri>]\n  umc auth status|accounts\n  umc auth refresh [--account <account-id>]\n  umc auth logout [--account <account-id>]\n  umc rpc --stdio\n  umcd  (start local IPC daemon)\n\nSet UMC_DATA_DIR to choose the data directory.\nSet UMC_CREDENTIAL_STORE=file to use the file credential backend."
         ),
     }
     Ok(())

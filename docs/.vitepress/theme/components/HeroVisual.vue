@@ -22,7 +22,11 @@
         <div class="umc-progress"><span></span></div>
         <div class="umc-line umc-muted">assets 100% · libraries 100% · client 100%</div>
         <div class="umc-line">
-          <span class="umc-prompt">$</span> umc launch instance-8f14d9 Steve --offline
+          <span class="umc-prompt">$</span> umc auth login
+        </div>
+        <div class="umc-line umc-muted">Microsoft account · session stored</div>
+        <div class="umc-line">
+          <span class="umc-prompt">$</span> umc launch instance-8f14d9 --online
         </div>
         <div class="umc-line umc-ok">
           <span class="umc-pulse"></span> Minecraft 1.21.1 running

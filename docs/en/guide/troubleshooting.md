@@ -243,8 +243,27 @@ or a game-side error. The console log contains the Java stack trace.
 
 ### Online multiplayer does not work
 
-Online authentication is not implemented. Offline mode cannot join servers that require a verified
-Microsoft account. Do not treat `--offline` as an account login.
+Offline mode cannot join servers that require a verified Microsoft account. Sign in first and launch
+online:
+
+```sh
+umc auth login
+umc launch <instance-id> --online
+```
+
+If online launch reports that the sign-in expired, the stored refresh token was rejected. Run
+`umc auth login` again. If several accounts are saved, pass `--account <account-id>`.
+
+### The keyring is unavailable
+
+UMC prefers the OS keyring and falls back to a `0600` file when the keyring cannot be reached. Use
+`umc auth status` to see the active backend and any warning. Set `UMC_CREDENTIAL_STORE=file` to use
+the file backend explicitly.
+
+### The browser does not open during login
+
+Run `umc auth login --no-browser` and open the printed URL manually. The callback still returns to a
+temporary localhost port, so the machine running UMC must be able to receive that loopback request.
 
 ## Platform and scope
 
@@ -270,5 +289,4 @@ When reporting an issue, include:
 - The tail of `logs/umc-console.log` for game launch failures.
 - Your Java version (`java -version`) and platform.
 
-Do not include account credentials; this release does not store Microsoft tokens. Logs may still
-contain personal data.
+Do not include account credentials or refresh tokens. Logs may still contain personal data.

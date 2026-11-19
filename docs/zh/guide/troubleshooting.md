@@ -218,7 +218,22 @@ instances/<instance-id>/logs/umc-console.log
 
 ### 在线多人游戏不可用
 
-在线认证尚未实现。离线模式无法加入要求已验证 Microsoft 账号的服务器。不要把 `--offline` 当作账号登录。
+离线模式无法加入要求已验证 Microsoft 账号的服务器。请先登录，然后在线启动：
+
+```sh
+umc auth login
+umc launch <instance-id> --online
+```
+
+如果在线启动提示登录已过期，说明已保存的刷新 Token 被拒绝，请重新运行 `umc auth login`。保存了多个账号时，使用 `--account <account-id>` 选择。
+
+### 钥匙串不可用
+
+UMC 优先使用操作系统钥匙串；无法访问时回退到 `0600` 文件。使用 `umc auth status` 查看当前后端和警告。设置 `UMC_CREDENTIAL_STORE=file` 可显式使用文件后端。
+
+### 登录时浏览器没有打开
+
+运行 `umc auth login --no-browser`，手动打开输出的 URL。回调仍会发送到临时 localhost 端口，因此运行 UMC 的机器必须能够接收该回环请求。
 
 ## 平台与范围
 
@@ -242,4 +257,4 @@ instances/<instance-id>/logs/umc-console.log
 - 游戏启动失败时 `logs/umc-console.log` 的末尾内容。
 - Java 版本（`java -version`）和平台。
 
-不要包含账号凭据；当前版本不存储 Microsoft Token。日志仍可能包含个人数据。
+不要包含账号凭据或刷新 Token。日志仍可能包含个人数据。

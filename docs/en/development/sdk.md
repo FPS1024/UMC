@@ -168,11 +168,46 @@ launcher.remove_java_runtime("java-runtime-delta@21.0.5").await?;
 `detect_java(Some(path), minimum)` accepts an explicit Java path. `install_java_runtime` requires
 the Minecraft version metadata to be installed.
 
+## Accounts
+
+```rust
+let status = launcher.auth_status().await?;
+println!("backend: {}", status.credential_backend);
+
+if !status.signed_in {
+    let handle = launcher.auth_login(true, None).await?;
+    loop {
+        for event in launcher.task_events(&handle.task_id, 0, 5_000).await? {
+            if event.event == "auth.url" {
+                println!("open: {}", event.data["url"]);
+            }
+        }
+        let task = launcher.task(&handle.task_id).await?;
+        if task.status != umc_sdk::TaskStatus::Running
+            && task.status != umc_sdk::TaskStatus::Queued
+        {
+            break;
+        }
+    }
+}
+
+let refreshed = launcher.auth_refresh(None).await?;
+println!("{} expires in {:?}s", refreshed.account.name, refreshed.minecraft_expires_in);
+
+launcher.auth_logout(None).await?;
+```
+
+`auth_login(open_browser, redirect_uri)` returns a task handle. Read `auth.url` before opening a
+browser yourself when `open_browser` is `false`. The task result contains the account ID and name;
+tokens are never part of the RPC surface. `auth_refresh` and online `launch` renew the session from
+the stored refresh token.
+
 ## Launch and processes
 
 ```rust
 use umc_sdk::LaunchRequest;
 
+// Offline launch
 let process = launcher
     .launch(LaunchRequest {
         instance_id: config.id.clone(),
@@ -188,6 +223,29 @@ let process = launcher
     })
     .await?;
 
+// Online launch with the default or a selected account
+let process = launcher
+    .launch(LaunchRequest {
+        instance_id: config.id.clone(),
+        username: String::new(),
+        offline_mode: false,
+        account_id: None,
+        java_path: None,
+        memory: None,
+        resolution: None,
+        fullscreen: false,
+        extra_jvm_args: vec![],
+        extra_game_args: vec![],
+    })
+    .await?;
+```
+
+For online launch, `username` is ignored and the signed-in profile supplies the name and UUID.
+Use `account_id` when more than one account is saved. Use `java_path` to override Java, `memory`
+to override the instance memory, and `resolution` / `fullscreen` / extra arguments for launch
+options.
+
+```rust
 println!("pid {} process {}", process.pid, process.process_id);
 
 let current = launcher.process_status(&process.process_id).await?;
@@ -195,9 +253,6 @@ let all = launcher.processes().await?;
 
 launcher.stop_process(&process.process_id).await?;
 ```
-
-`launch` rejects `offline_mode: false`. Use `java_path` to override Java, `memory` to override the
-instance memory, and `resolution` / `fullscreen` / extra arguments for launch options.
 
 Process status must be polled; there is no process event stream. In-process launch keeps the monitor
 in your process. Use daemon mode when the game must outlive the UI or client process.

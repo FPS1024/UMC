@@ -13,7 +13,8 @@ _最后更新：2026 年 11 月 19 日_
 - UMC 不运营用户账号服务、遥测端点、分析管道、广告系统、崩溃报告服务、云同步或远程管理服务。
 - UMC 在本地设备上存储游戏文件、实例、运行时、任务状态和日志。
 - Microsoft 登录发生在 Microsoft 的页面上。UMC 永远不会收到你的 Microsoft 密码。
-- 当前版本不会把 Microsoft 或 Minecraft Token 持久化到磁盘。Token 只存在于进程内存中，命令退出后即被丢弃。
+- 当前版本只保存 Microsoft 刷新 Token 和非敏感账号元数据。Microsoft、Xbox、XSTS 和 Minecraft 访问 Token 只存在于进程内存中，不会持久化。
+- 在线启动使用已保存的刷新 Token 获取新 Token，无需打开浏览器。
 - 版本查询、安装和加载器元数据请求会直接发往相关上游服务，这些服务可能收到普通连接元数据，例如你的 IP 地址。
 
 ## 存储在设备上的数据
@@ -27,8 +28,10 @@ UMC 将数据保存在 `UMC_DATA_DIR`（开发环境中为 `./umc-data`）下，
 | 任务和进程记录 | 让守护进程报告进度、恢复中断的工作并跟踪正在运行的游戏。 |
 | 日志 | 记录安装进度、启动输出和错误，用于排查问题。 |
 | 版本和元数据缓存 | 避免重复请求上游服务。 |
+| `accounts/` 下的账号元数据 | Minecraft 用户名、UUID、最后登录时间、默认账号标记和凭据后端。不包含 Token。 |
+| 刷新 Token | 优先存入操作系统钥匙串；不可用时存入 `credentials/<account-id>.json`，权限为 `0600`。 |
 
-UMC 不存储你的 Microsoft 密码。当前版本也不存储 Microsoft 或 Minecraft Token。
+UMC 不存储你的 Microsoft 密码。Microsoft、Xbox、XSTS 和 Minecraft 访问 Token 不会写入磁盘。
 
 ## Microsoft 账号登录
 
@@ -41,20 +44,20 @@ UMC 不存储你的 Microsoft 密码。当前版本也不存储 Microsoft 或 Mi
 5. UMC 将 Microsoft 访问 Token 发送到 Xbox Live 用户认证、XSTS 授权和 Minecraft 服务登录，并获得 Xbox、XSTS Token 以及 Minecraft 访问 Token。
 6. UMC 请求 Minecraft 档案（用户名、UUID、皮肤和披风），以确认账号。
 
-请求的 scope 为 `XboxLive.signin offline_access`。`offline_access` 允许 Microsoft 返回刷新 Token；当前版本会收到它，但不会保存。
+请求的 scope 为 `XboxLive.signin offline_access`。`offline_access` 允许 Microsoft 返回刷新 Token，UMC 会保存它，以便之后的在线启动无需打开浏览器。
 
 登录过程中处理的账号数据：
 
 | 数据 | 当前处理方式 |
 |---|---|
 | Microsoft 密码 | UMC 不会看到或存储，只在 Microsoft 页面上输入。 |
-| Microsoft 访问 Token | 在登录命令运行期间保存在内存中，不写入磁盘。 |
-| Microsoft 刷新 Token | 收到后在进程退出时丢弃，不写入磁盘。 |
+| Microsoft 访问 Token | 在命令运行期间保存在内存中，不写入磁盘。 |
+| Microsoft 刷新 Token | 存入操作系统钥匙串；没有可用钥匙串时存入 `0600` 文件。用于静默续期。 |
 | Xbox Live 和 XSTS Token | 在登录链路中保存在内存中，不写入磁盘。 |
-| Minecraft 访问 Token | 保存在内存中，不写入磁盘。 |
-| Minecraft 档案（名称、UUID、皮肤、披风） | 在终端显示，并在命令运行期间保存在内存中，不做持久化。 |
+| Minecraft 访问 Token | 保存在内存中并传给游戏进程，不写入磁盘。 |
+| Minecraft 档案（名称、UUID、皮肤、披风） | 仅保存非敏感账号元数据（名称和 UUID）。皮肤和披风不做持久化。 |
 
-未来版本预计会把刷新 Token 存入操作系统凭据存储，以便无需重新打开浏览器即可登录。届时会在功能发布前，在本政策中说明存储位置、删除命令和注销行为。
+使用 `umc auth logout` 删除已保存的凭据会从本机移除刷新 Token 和账号元数据，不会更改你的 Microsoft 账号。
 
 ## 网络请求
 
@@ -101,7 +104,7 @@ Token 不会写入日志。UMC 使用的 Token 类型在格式化调试信息时
 
 - 在 UMC 中删除实例，或删除其目录，可删除该实例的文件、设置和日志。
 - 删除 `UMC_DATA_DIR` 可移除所有由 UMC 管理的数据。
-- Token 在登录进程退出时即被丢弃，因此当前版本没有与 Token 相关的数据需要删除。
+- 运行 `umc auth logout` 可移除已保存的刷新 Token 和账号元数据。删除 `UMC_DATA_DIR` 也会移除文件后备；钥匙串条目应通过 `auth logout` 清理。
 - 卸载 UMC 不一定会删除 `UMC_DATA_DIR`；如需彻底移除，请自行删除。
 
 发送给 Microsoft、Mojang 或其他第三方的数据，由这些服务按其自身政策保留。
@@ -112,7 +115,7 @@ Microsoft、Xbox、Minecraft、Mojang、Fabric、Forge、NeoForge、模组平台
 
 ## 政策变更
 
-当 UMC 增加账号持久化、遥测、托管服务、崩溃报告、模组分发或其他重要数据流时，本政策会更新。页首日期表示最后变更时间，重大变更会在发布说明中注明。
+当 UMC 增加遥测、托管服务、崩溃报告、模组分发或其他重要数据流时，本政策会更新。页首日期表示最后变更时间，重大变更会在发布说明中注明。
 
 ## 联系方式
 

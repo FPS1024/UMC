@@ -1,11 +1,10 @@
-//! Microsoft OAuth 2.0 authorization-code flow with a local loopback callback.
-//!
-//! This stage obtains Microsoft OAuth tokens only. Xbox Live, XSTS, Minecraft
-//! services, token persistence, and online launch are handled separately.
+//! Microsoft OAuth 2.0 authorization-code flow with a local loopback callback,
+//! refresh-token renewal, and the Xbox Live/XSTS/Minecraft sign-in chain.
 
 use std::collections::HashMap;
 use std::fmt;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
@@ -17,6 +16,8 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::time::{Instant, timeout};
 use url::Url;
 use uuid::Uuid;
+
+use crate::credentials::{AccountRecord, CredentialStore};
 
 /// Public client ID registered for UMC's local-callback OAuth flow.
 pub const MICROSOFT_CLIENT_ID: &str = "16e42c20-a7b7-45d3-a09e-0b86ff14d2e5";
@@ -158,6 +159,7 @@ pub struct MinecraftSession {
     pub microsoft_expires_in: Option<u64>,
     pub minecraft_access_token: String,
     pub minecraft_expires_in: Option<u64>,
+    pub xuid: Option<String>,
     pub profile: MinecraftProfile,
 }
 
@@ -180,6 +182,7 @@ impl fmt::Debug for MinecraftSession {
 struct XboxLiveAuth {
     token: String,
     user_hash: String,
+    xuid: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -198,6 +201,8 @@ struct XboxDisplayClaims {
 #[derive(Deserialize)]
 struct XboxUserClaim {
     uhs: String,
+    #[serde(default)]
+    xid: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -661,6 +666,290 @@ async fn exchange_code(
     })
 }
 
+/// A refresh-token request failed. `invalid_grant` means the stored credential
+/// is no longer usable and the user must sign in again.
+#[derive(Debug, Clone)]
+pub struct RefreshError {
+    pub invalid_grant: bool,
+    pub message: String,
+}
+
+impl RefreshError {
+    fn other(message: impl Into<String>) -> Self {
+        Self {
+            invalid_grant: false,
+            message: message.into(),
+        }
+    }
+}
+
+impl fmt::Display for RefreshError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+impl std::error::Error for RefreshError {}
+
+/// Exchanges a Microsoft refresh token for a fresh access token.
+pub async fn refresh_microsoft_tokens(
+    config: &MicrosoftOAuthConfig,
+    refresh_token: &str,
+) -> Result<MicrosoftOAuthTokens, RefreshError> {
+    config.validate().map_err(RefreshError::other)?;
+    let client = crate::engine::http_client().map_err(RefreshError::other)?;
+    let response = client
+        .post(config.token_url().map_err(RefreshError::other)?)
+        .form(&[
+            ("client_id", config.client_id.as_str()),
+            ("grant_type", "refresh_token"),
+            ("refresh_token", refresh_token),
+            ("scope", config.scope.as_str()),
+        ])
+        .send()
+        .await
+        .map_err(|error| {
+            RefreshError::other(format!("Microsoft refresh request failed: {error}"))
+        })?;
+
+    let status = response.status();
+    let bytes = response.bytes().await.map_err(|error| {
+        RefreshError::other(format!(
+            "Could not read the Microsoft refresh response: {error}"
+        ))
+    })?;
+
+    if !status.is_success() {
+        let oauth_error = serde_json::from_slice::<OAuthError>(&bytes).ok();
+        let invalid_grant = oauth_error.as_ref().is_some_and(|error| {
+            error.error == "invalid_grant"
+                || error.error == "interaction_required"
+                || error
+                    .error_description
+                    .as_deref()
+                    .is_some_and(|description| {
+                        description.contains("AADSTS70008") || description.contains("AADSTS50173")
+                    })
+        });
+        let message = oauth_error
+            .and_then(|error| {
+                error
+                    .error_description
+                    .filter(|description| !description.is_empty())
+                    .or(Some(error.error))
+            })
+            .unwrap_or_else(|| status.to_string());
+        return Err(RefreshError {
+            invalid_grant,
+            message: format!("Microsoft sign-in has expired: {message}"),
+        });
+    }
+
+    let response: TokenResponse = serde_json::from_slice(&bytes).map_err(|error| {
+        RefreshError::other(format!("Invalid Microsoft refresh response: {error}"))
+    })?;
+    if response.access_token.is_empty() {
+        return Err(RefreshError::other(
+            "Microsoft refresh response did not include an access token",
+        ));
+    }
+    Ok(MicrosoftOAuthTokens {
+        access_token: response.access_token,
+        refresh_token: response.refresh_token,
+        expires_in: response.expires_in,
+        scope: response.scope,
+        token_type: response.token_type,
+        id_token: response.id_token,
+    })
+}
+
+/// Renews a Minecraft session without opening a browser. The refresh token is
+/// reused when Microsoft does not rotate it.
+pub async fn refresh_minecraft_session<F>(
+    config: &MicrosoftOAuthConfig,
+    refresh_token: &str,
+    progress: F,
+) -> Result<MinecraftSession, RefreshError>
+where
+    F: FnMut(&str),
+{
+    let oauth = refresh_microsoft_tokens(config, refresh_token).await?;
+    let mut session = complete_minecraft_login_with_progress(&oauth, progress)
+        .await
+        .map_err(RefreshError::other)?;
+    if session.microsoft_refresh_token.is_none() {
+        session.microsoft_refresh_token = Some(refresh_token.to_owned());
+    }
+    Ok(session)
+}
+
+/// Owns local account metadata, credential storage, and silent renewal.
+#[derive(Clone)]
+pub struct AuthManager {
+    config: MicrosoftOAuthConfig,
+    store: CredentialStore,
+}
+
+impl AuthManager {
+    pub fn new(root: impl Into<PathBuf>, config: MicrosoftOAuthConfig) -> Self {
+        Self {
+            store: CredentialStore::new(root),
+            config,
+        }
+    }
+
+    pub fn config(&self) -> &MicrosoftOAuthConfig {
+        &self.config
+    }
+
+    pub fn credential_backend(&self) -> &'static str {
+        self.store.backend()
+    }
+
+    pub fn storage_warning(&self) -> Option<&str> {
+        self.store.warning()
+    }
+
+    pub async fn accounts(&self) -> Result<Vec<AccountRecord>, String> {
+        self.store.list_accounts().await
+    }
+
+    pub async fn status(&self) -> Result<serde_json::Value, String> {
+        let accounts = self.store.list_accounts().await?;
+        let default_account = self.store.default_account().await?;
+        Ok(serde_json::json!({
+            "signed_in": !accounts.is_empty(),
+            "default_account": default_account,
+            "credential_backend": self.store.backend(),
+            "storage_warning": self.store.warning(),
+            "accounts": accounts,
+        }))
+    }
+
+    async fn acquire_lock(&self, account_id: &str) -> Result<std::fs::File, String> {
+        let store = self.store.clone();
+        let account_id = account_id.to_owned();
+        tokio::task::spawn_blocking(move || store.lock_account(&account_id))
+            .await
+            .map_err(|e| format!("Could not acquire the account lock: {e}"))?
+    }
+
+    /// Persists a completed login. The refresh token is the only token written
+    /// to disk or to the OS keyring.
+    pub async fn save_session(
+        &self,
+        session: &MinecraftSession,
+    ) -> Result<(AccountRecord, Option<String>), String> {
+        let refresh_token = session
+            .microsoft_refresh_token
+            .as_deref()
+            .ok_or("Microsoft did not return a refresh token; sign in again")?;
+        let account_id = session.profile.id.clone();
+        let lock = self.acquire_lock(&account_id).await?;
+        let warning = self
+            .store
+            .save_refresh_token(&account_id, refresh_token)
+            .await?;
+        let record = AccountRecord {
+            schema_version: 1,
+            account_id: account_id.clone(),
+            username: session.profile.name.clone(),
+            last_login: crate::engine::timestamp_rfc3339(),
+            credential_backend: Some(self.store.backend().to_owned()),
+        };
+        self.store.save_account(&record).await?;
+        if self.store.default_account().await?.is_none() {
+            self.store.set_default_account(&account_id).await?;
+        }
+        let _ = fs2::FileExt::unlock(&lock);
+        Ok((record, warning))
+    }
+
+    async fn select_account(&self, account_id: Option<&str>) -> Result<String, String> {
+        if let Some(account_id) = account_id {
+            crate::credentials::validate_account_id(account_id)?;
+            if self.store.load_account(account_id).await?.is_none() {
+                return Err(format!("Unknown account: {account_id}"));
+            }
+            return Ok(account_id.to_owned());
+        }
+        if let Some(default) = self.store.default_account().await? {
+            return Ok(default);
+        }
+        let accounts = self.store.list_accounts().await?;
+        match accounts.as_slice() {
+            [] => Err("No Microsoft account is signed in; run `umc auth login` first".into()),
+            [only] => Ok(only.account_id.clone()),
+            _ => Err("Multiple accounts are signed in; pass --account <account-id>".into()),
+        }
+    }
+
+    /// Renews the selected account's Minecraft session without user
+    /// interaction. Invalid refresh tokens are removed so the next login is a
+    /// clean one.
+    pub async fn refresh_session<F>(
+        &self,
+        account_id: Option<&str>,
+        mut progress: F,
+    ) -> Result<MinecraftSession, String>
+    where
+        F: FnMut(&str),
+    {
+        let account_id = self.select_account(account_id).await?;
+        let lock = self.acquire_lock(&account_id).await?;
+        let refresh_token = self
+            .store
+            .load_refresh_token(&account_id)
+            .await?
+            .ok_or_else(|| {
+                "No stored credential for this account; run `umc auth login` again".to_string()
+            })?;
+
+        let session =
+            match refresh_minecraft_session(&self.config, &refresh_token, &mut progress).await {
+                Ok(session) => session,
+                Err(error) if error.invalid_grant => {
+                    self.store.delete_refresh_token(&account_id).await?;
+                    let _ = self.store.delete_account(&account_id).await;
+                    let _ = self.store.clear_default_account(&account_id).await;
+                    let _ = fs2::FileExt::unlock(&lock);
+                    return Err(format!("{}; run `umc auth login` again", error.message));
+                }
+                Err(error) => {
+                    let _ = fs2::FileExt::unlock(&lock);
+                    return Err(error.message);
+                }
+            };
+
+        if let Some(token) = session.microsoft_refresh_token.as_deref() {
+            self.store.save_refresh_token(&account_id, token).await?;
+        }
+        let record = AccountRecord {
+            schema_version: 1,
+            account_id: account_id.clone(),
+            username: session.profile.name.clone(),
+            last_login: crate::engine::timestamp_rfc3339(),
+            credential_backend: Some(self.store.backend().to_owned()),
+        };
+        self.store.save_account(&record).await?;
+        if self.store.default_account().await?.is_none() {
+            self.store.set_default_account(&account_id).await?;
+        }
+        let _ = fs2::FileExt::unlock(&lock);
+        Ok(session)
+    }
+
+    pub async fn logout(&self, account_id: Option<&str>) -> Result<String, String> {
+        let account_id = self.select_account(account_id).await?;
+        let lock = self.acquire_lock(&account_id).await?;
+        self.store.delete_refresh_token(&account_id).await?;
+        self.store.delete_account(&account_id).await?;
+        self.store.clear_default_account(&account_id).await?;
+        let _ = fs2::FileExt::unlock(&lock);
+        Ok(account_id)
+    }
+}
+
 /// Completes the Microsoft -> Xbox Live -> XSTS -> Minecraft login chain.
 pub async fn complete_minecraft_login(
     oauth: &MicrosoftOAuthTokens,
@@ -686,6 +975,7 @@ where
 
     progress("Logging in to Minecraft services");
     let minecraft = login_with_xbox(&client, &xsts.user_hash, &xsts.token).await?;
+    let xuid = xsts.xuid.clone().or(xbl.xuid.clone());
 
     progress("Fetching Minecraft profile");
     let profile = fetch_minecraft_profile(&client, &minecraft.access_token).await?;
@@ -696,6 +986,7 @@ where
         microsoft_expires_in: oauth.expires_in,
         minecraft_access_token: minecraft.access_token,
         minecraft_expires_in: minecraft.expires_in,
+        xuid,
         profile,
     })
 }
@@ -759,15 +1050,15 @@ async fn request_xbox_token(
 
     let response: XboxTokenResponse =
         serde_json::from_slice(&bytes).map_err(|e| format!("Invalid {step} response: {e}"))?;
-    let user_hash = response
+    let claim = response
         .display_claims
         .xui
         .first()
-        .map(|claim| claim.uhs.clone())
         .ok_or_else(|| format!("{step} response did not include a user hash"))?;
     Ok(XboxLiveAuth {
         token: response.token,
-        user_hash,
+        user_hash: claim.uhs.clone(),
+        xuid: claim.xid.clone(),
     })
 }
 
@@ -1077,6 +1368,7 @@ mod tests {
             microsoft_expires_in: Some(3600),
             minecraft_access_token: "mc-access-secret".into(),
             minecraft_expires_in: Some(86400),
+            xuid: Some("2535400000000000".into()),
             profile: MinecraftProfile {
                 id: "069a79f444e94726a5befca90e38aaf5".into(),
                 name: "Steve".into(),
@@ -1089,5 +1381,55 @@ mod tests {
         assert!(!debug.contains("ms-refresh-secret"));
         assert!(!debug.contains("mc-access-secret"));
         assert!(debug.contains("Steve"));
+    }
+
+    #[tokio::test]
+    async fn auth_manager_persists_and_logs_out_an_account() {
+        let root = std::env::temp_dir().join(format!("umc-auth-{}", Uuid::new_v4()));
+        let manager = AuthManager {
+            config: MicrosoftOAuthConfig::default(),
+            store: crate::credentials::CredentialStore::file_store(root.clone()),
+        };
+        let session = MinecraftSession {
+            microsoft_access_token: "ms-access-secret".into(),
+            microsoft_refresh_token: Some("ms-refresh-secret".into()),
+            microsoft_expires_in: Some(3600),
+            minecraft_access_token: "mc-access-secret".into(),
+            minecraft_expires_in: Some(86400),
+            xuid: Some("2535400000000000".into()),
+            profile: MinecraftProfile {
+                id: "069a79f444e94726a5befca90e38aaf5".into(),
+                name: "Steve".into(),
+                skins: serde_json::json!([]),
+                capes: serde_json::json!([]),
+            },
+        };
+        let (record, warning) = manager.save_session(&session).await.unwrap();
+        assert!(warning.is_none());
+        assert_eq!(record.username, "Steve");
+        assert_eq!(
+            manager
+                .store
+                .load_refresh_token(&session.profile.id)
+                .await
+                .unwrap()
+                .as_deref(),
+            Some("ms-refresh-secret")
+        );
+        let status = manager.status().await.unwrap();
+        assert_eq!(status["signed_in"], true);
+        assert_eq!(manager.accounts().await.unwrap().len(), 1);
+
+        manager.logout(None).await.unwrap();
+        assert!(manager.accounts().await.unwrap().is_empty());
+        assert!(
+            manager
+                .store
+                .load_refresh_token(&session.profile.id)
+                .await
+                .unwrap()
+                .is_none()
+        );
+        let _ = tokio::fs::remove_dir_all(root).await;
     }
 }

@@ -1,29 +1,82 @@
 # Launching and processes
 
-UMC launches Minecraft: Java Edition in explicit offline mode. This page describes the launch
-command, the arguments UMC adds, process supervision, logs, and stopping a game.
+UMC launches Minecraft: Java Edition with either an explicit offline identity or a signed-in
+Microsoft account. This page describes both launch modes, the arguments UMC adds, process
+supervision, logs, and stopping a game.
 
-::: warning Offline only
+::: warning Offline mode
 
-This release does not implement Microsoft authentication. Offline mode does not verify account
-ownership and does not enable authenticated multiplayer. Do not treat it as a Microsoft account
-login.
+Offline mode does not verify account ownership and does not enable authenticated multiplayer. Only
+online mode signs in with a Microsoft account and obtains a Minecraft session. Use offline mode for
+local testing, not as an account login.
 
 :::
 
 ## Launch an installed instance
 
+Online:
+
 ```sh
-umc launch <instance-id> Steve --offline
+umc auth login
+umc launch <instance-id> --online
+```
+
+Offline:
+
+```sh
+umc launch <instance-id> --offline Steve
 ```
 
 - The instance must be installed first with `umc instance install`.
-- The username must be 1–16 characters: ASCII letters, digits, or underscores.
-- `--offline` is required. The command refuses to start without it.
+- `--online` refreshes the selected account's session silently and launches authenticated play.
+- `--offline` requires a username of 1–16 ASCII letters, digits, or underscores.
+- With multiple saved accounts, pass `--account <account-id>` to choose one.
 - The CLI waits for the game to exit and prints a final status JSON.
 
 The command prints the initial process record, then polls every second until the status becomes
 `exited` or `failed`.
+
+## Online launch
+
+Sign in once:
+
+```sh
+umc auth login
+```
+
+This opens Microsoft's sign-in page, completes the Xbox Live, XSTS, and Minecraft login chain, and
+stores only the refresh token. Later launches use that token without opening a browser:
+
+```sh
+umc launch <instance-id> --online
+umc launch <instance-id> --online --account <account-id>
+```
+
+The game receives:
+
+```text
+--username      <Minecraft profile name>
+--uuid          <Minecraft profile UUID without dashes>
+--accessToken   <Minecraft access token>
+--clientId      <UMC OAuth client ID>
+--xuid          <Xbox user ID>
+--userType      msa
+--versionType   UMC
+```
+
+A fresh Minecraft access token is requested on every online launch, so the saved refresh token is
+the only long-lived credential. See [Account management](./user-guide#microsoft-account) for
+`status`, `refresh`, and `logout`.
+
+### Token handling
+
+- Microsoft and Minecraft tokens are never printed, written to instance configuration, or included
+  in process records.
+- The refresh token is stored in the OS keyring when available, otherwise in a `0600` file under
+  `UMC_DATA_DIR/credentials/`.
+- Minecraft requires the access token on the command line, so it is visible in the local process
+  list while the game runs. This is inherent to the vanilla client and applies to every launcher.
+- `umc auth logout` deletes the stored credential.
 
 ## Offline identity
 
@@ -51,6 +104,8 @@ The launcher assembles the command from the official version metadata:
 - `-Xms` / `-Xmx` from the instance memory configuration.
 - `--username`, `--version`, `--gameDir`, `--assetsDir`, `--assetIndex`, `--uuid`,
   `--accessToken`, `--userType`, and `--versionType`.
+- `--xuid` and `--clientId` when the selected game version includes them; online launch fills them
+  from the Xbox identity and UMC's OAuth client ID.
 - The official JVM and game arguments, with platform and feature rules applied.
 - The official logging configuration, when the version provides one.
 

@@ -14,7 +14,7 @@ diagnostics go to stderr.
 | Errors | Non-zero exit status; the error message is printed by the CLI |
 | Configuration file | None; the data directory is selected by environment variable |
 | Shell execution | UMC does not expose arbitrary shell execution |
-| Online mode | Not implemented; launch requires `--offline` |
+| Online mode | Available with `--online`; requires `umc auth login` |
 
 Most commands do not require `umcd`. The exception is `umc task ...`, which connects to the local
 daemon. See [Tasks and the local daemon](./tasks-and-daemon) for the distinction.
@@ -39,7 +39,13 @@ umc task events <task-id> [after-sequence]
 umc process list
 umc process status <process-id>
 umc process stop <process-id>
-umc launch <instance-id> <offline-username> --offline
+umc auth login [--no-browser] [--redirect-uri <uri>]
+umc auth status
+umc auth accounts
+umc auth refresh [--account <account-id>]
+umc auth logout [--account <account-id>]
+umc launch <instance-id> --online [--account <account-id>]
+umc launch <instance-id> --offline <username>
 umc rpc --stdio
 umcd
 ```
@@ -213,20 +219,63 @@ Verifies the `-Dumc.process_id` marker before sending a termination signal. On U
 `SIGTERM`; on Windows it terminates the verified process tree. A stale or recycled PID is never
 signaled.
 
-## Launch command
+## Auth commands
 
-### `umc launch <instance-id> <offline-username> --offline`
+### `umc auth login [--no-browser] [--redirect-uri <uri>]`
 
-Starts Minecraft in explicit offline mode, then waits for the game to exit. It prints the initial
-`GameProcess` JSON and a final status JSON.
+Starts the Microsoft OAuth flow with PKCE and a loopback callback. By default UMC opens the
+authorization URL in the default browser. `--no-browser` prints the URL instead. After the callback,
+UMC completes Xbox Live, XSTS, and Minecraft login and saves only the refresh token.
 
 ```sh
-umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 Steve --offline
+umc auth login
+umc auth login --no-browser
 ```
 
-- The username must be 1–16 ASCII letters, digits, or underscores.
+The command prints the account name and UUID. Tokens are never printed.
+
+### `umc auth status`
+
+Prints the credential backend (`keyring` or `file`), the default account, and all saved accounts as
+JSON. No network request is made.
+
+### `umc auth accounts`
+
+Prints the saved account metadata as a JSON array.
+
+### `umc auth refresh [--account <account-id>]`
+
+Renews the selected account's Minecraft session using the stored refresh token. No browser is
+opened. With multiple accounts, select one with `--account`.
+
+### `umc auth logout [--account <account-id>]`
+
+Deletes the stored refresh token and account metadata for the selected account. It does not change
+the Microsoft account or Minecraft profile.
+
+## Launch command
+
+### `umc launch <instance-id> --online [--account <account-id>]`
+
+Renews the selected Microsoft account's session and launches Minecraft with an authenticated
+identity, then waits for the game to exit.
+
+```sh
+umc auth login
+umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 --online
+```
+
+### `umc launch <instance-id> --offline <username>`
+
+Starts Minecraft in explicit offline mode, then waits for the game to exit. The username must be
+1–16 ASCII letters, digits, or underscores.
+
+```sh
+umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 --offline Steve
+```
+
 - The instance must be installed.
-- `--offline` is required; there is no online mode in this release.
+- Choose exactly one of `--online` or `--offline`.
 - The CLI launch command does not expose memory, resolution, fullscreen, JVM argument, or Java path
   overrides. Those fields are available through the JSON-RPC `launch.start` method and the Rust SDK.
 

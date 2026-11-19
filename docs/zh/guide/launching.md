@@ -4,26 +4,72 @@ source: en/guide/launching.md
 
 # 启动与进程
 
-UMC 以显式离线模式启动 Minecraft: Java Edition。本页介绍启动命令、UMC 添加的参数、进程监管、日志以及如何停止游戏。
+UMC 可以使用显式离线身份或已登录的 Microsoft 账号启动 Minecraft: Java Edition。本页介绍两种启动模式、UMC 添加的参数、进程监管、日志以及如何停止游戏。
 
-::: warning 仅支持离线
+::: warning 离线模式
 
-当前版本没有实现 Microsoft 认证。离线模式不会验证账号所有权，也不会启用需要认证的多人游戏。不要把它当作 Microsoft 账号登录。
+离线模式不会验证账号所有权，也不会启用需要认证的多人游戏。只有在线模式会通过 Microsoft 账号登录并获得 Minecraft 会话。离线模式适合本地测试，不能当作账号登录使用。
 
 :::
 
 ## 启动已安装实例
 
+在线：
+
 ```sh
-umc launch <instance-id> Steve --offline
+umc auth login
+umc launch <instance-id> --online
+```
+
+离线：
+
+```sh
+umc launch <instance-id> --offline Steve
 ```
 
 - 实例必须先通过 `umc instance install` 安装。
-- 用户名必须为 1–16 个字符：ASCII 字母、数字或下划线。
-- 必须传入 `--offline`，否则命令会拒绝启动。
+- `--online` 会静默刷新所选账号的会话，并以认证身份启动。
+- `--offline` 需要 1–16 个 ASCII 字母、数字或下划线组成的用户名。
+- 保存了多个账号时，使用 `--account <account-id>` 选择账号。
 - CLI 会等待游戏退出，并输出最终状态 JSON。
 
 命令先输出初始进程记录，然后每秒轮询一次，直到状态变为 `exited` 或 `failed`。
+
+## 在线启动
+
+登录一次：
+
+```sh
+umc auth login
+```
+
+这会打开 Microsoft 登录页面，完成 Xbox Live、XSTS 和 Minecraft 登录链路，并且只保存刷新 Token。之后的启动会使用该 Token，不再打开浏览器：
+
+```sh
+umc launch <instance-id> --online
+umc launch <instance-id> --online --account <account-id>
+```
+
+游戏会收到：
+
+```text
+--username      <Minecraft 档案名称>
+--uuid          <不带横线的 Minecraft 档案 UUID>
+--accessToken   <Minecraft 访问 Token>
+--clientId      <UMC OAuth 客户端 ID>
+--xuid          <Xbox 用户 ID>
+--userType      msa
+--versionType   UMC
+```
+
+每次在线启动都会获取新的 Minecraft 访问 Token，因此保存的刷新 Token 是唯一长期凭据。`status`、`refresh` 和 `logout` 见[账号管理](./user-guide#microsoft-账号)。
+
+### Token 处理
+
+- Microsoft 和 Minecraft Token 不会被打印、写入实例配置或加入进程记录。
+- 刷新 Token 优先存入操作系统钥匙串；不可用时存入 `UMC_DATA_DIR/credentials/` 下权限为 `0600` 的文件。
+- Minecraft 要求访问 Token 出现在命令行中，因此游戏运行期间它会在本机进程列表中可见。这是原版客户端的固有限制，所有启动器都一样。
+- `umc auth logout` 会删除已保存的凭据。
 
 ## 离线身份
 
@@ -47,6 +93,7 @@ UMC 根据用户名派生确定性的离线 UUID，与 Minecraft 的标准离线
 - 用于进程身份校验的 `-Dumc.process_id=<process-id>`。
 - 来自实例内存配置的 `-Xms` / `-Xmx`。
 - `--username`、`--version`、`--gameDir`、`--assetsDir`、`--assetIndex`、`--uuid`、`--accessToken`、`--userType` 和 `--versionType`。
+- 当所选游戏版本包含时，还会传入 `--xuid` 和 `--clientId`；在线启动会从 Xbox 身份和 UMC 的 OAuth 客户端 ID 填充。
 - 官方 JVM 和游戏参数，并应用平台与特性规则。
 - 版本提供的官方日志配置。
 

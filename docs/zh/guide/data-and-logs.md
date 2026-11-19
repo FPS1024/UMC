@@ -49,8 +49,15 @@ umc version list
     events/<task-id>.jsonl         # 带序号的事件历史
   processes/
     <process-id>.json              # 游戏进程状态
+  accounts/
+    <account-id>.json              # 非敏感账号元数据
+    default                        # 默认账号 ID
+  credentials/
+    <account-id>.json              # 刷新 Token 后备文件（0600，无钥匙串时）
   umc.sock                         # `umcd` 运行时的 Unix Socket
 ```
+
+操作系统钥匙串可用时，刷新 Token 保存在钥匙串中，而不是 `credentials/`。
 
 在 Windows 上，守护进程使用命名管道而不是 `umc.sock`。
 
@@ -65,6 +72,7 @@ umc version list
 | `instances/<id>/logs/` | 可以，在没有游戏运行时 | 控制台历史丢失 |
 | `tasks/` | 任务活动期间不建议 | 任务历史和恢复状态丢失 |
 | `processes/` | 不建议 | 进程协调状态丢失 |
+| `accounts/`、`credentials/` | 使用 `umc auth logout` | 已保存的登录状态被移除 |
 | `umc.sock` | 仅在守护进程未运行时 | 过期 Socket 可以删除；守护进程会重新创建 |
 
 不要手工删除 `instance.json` 或 `install.json`。请使用 `umc instance repair` 或重新安装。
@@ -114,6 +122,12 @@ cp -a "$UMC_DATA_DIR" "$HOME/umc-backup"
 ```
 
 在下载或游戏运行时创建的备份可能包含不完整或不一致的状态。
+
+::: warning 备份中的凭据
+
+如果 UMC 使用文件凭据后备，备份中的 `credentials/` 会包含 Microsoft 刷新 Token。请私下保存备份，或在复制前运行 `umc auth logout`，恢复后重新登录。
+
+:::
 
 ## 恢复
 

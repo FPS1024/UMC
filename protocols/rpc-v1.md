@@ -14,7 +14,7 @@ Success:
 {"jsonrpc":"2.0","id":1,"result":{"name":"UMC","version":"0.1.0","api_versions":["v1"]}}
 ```
 
-Errors use JSON-RPC reserved errors `-32700` (parse), `-32600` (invalid request), `-32601` (unknown method), `-32602` (invalid params), `-32603` (internal). UMC server errors use `-32000..-32099`; current mapping: `-32001` internal, `-32003` missing resource/process, `-32005` network/install, `-32007` authentication mode unsupported, `-32009` instance operation, `-32010` Java/launch. Codes are provisional until 1.0 and must not encode Rust implementation details.
+Errors use JSON-RPC reserved errors `-32700` (parse), `-32600` (invalid request), `-32601` (unknown method), `-32602` (invalid params), `-32603` (internal). UMC server errors use `-32000..-32099`; current mapping: `-32001` internal, `-32003` missing resource/process, `-32005` network/install, `-32007` authentication/session failure, `-32009` instance operation, `-32010` Java/launch. Codes are provisional until 1.0 and must not encode Rust implementation details.
 
 ## Methods in scaffold
 
@@ -37,7 +37,12 @@ Errors use JSON-RPC reserved errors `-32700` (parse), `-32600` (invalid request)
 | `java.runtime.list` | `{}` | verified UMC managed runtimes |
 | `java.runtime.install` | `{ "minecraft_version", "timeout_seconds?" }` | queues installation of the Mojang runtime component required by an installed Minecraft version |
 | `java.runtime.remove` | `{ "runtime_id" }` | removes a runtime from UMC's managed runtime directory |
-| `launch.start` | `{ "instance_id", "username", "offline_mode": true, ... }` | starts a game process and returns its UMC process ID and OS PID |
+| `auth.status` | `{}` | signed-in state, default account, credential backend, storage warning, and saved accounts |
+| `auth.accounts` | `{}` | saved account metadata without tokens |
+| `auth.login` | `{ "open_browser"?, "redirect_uri"? }` | queues an interactive Microsoft sign-in task and returns a task handle |
+| `auth.refresh` | `{ "account_id"? }` | renews the selected account's Minecraft session without a browser |
+| `auth.logout` | `{ "account_id"? }` | deletes the selected account's stored refresh token and metadata |
+| `launch.start` | `{ "instance_id", "offline_mode", "username"?, "account_id"?, ... }` | starts a game process and returns its UMC process ID and OS PID |
 | `process.list` | `{}` | reconciles and lists persisted process states, suitable for reconnect after client/daemon restarts |
 | `process.status` | `{ "process_id" }` | reconciled process state and exit code when known |
 | `process.stop` | `{ "process_id" }` | identity-checks and stops a managed process, including after daemon reconnection |
@@ -45,15 +50,40 @@ Errors use JSON-RPC reserved errors `-32700` (parse), `-32600` (invalid request)
 | `task.cancel` | `{ "task_id" }` | requests cancellation of a queued or running task |
 | `task.events` | `{ "task_id", "after_sequence?", "wait_ms?" }` | returns persisted events after a sequence; `wait_ms` long-polls up to 30 seconds |
 
+## Authentication flow
+
+`auth.login` is a task because it waits for the user to finish a browser flow. It returns a task handle; clients follow `task.events`:
+
+| Event | Data |
+|---|---|
+| `auth.url` | `{ "url", "redirect_uri" }` — open this URL, or let `open_browser` do it |
+| `auth.browser_error` | `{ "error" }` when the browser could not be opened |
+| `auth.stage` | `{ "stage" }` — Xbox Live, XSTS, Minecraft login, or profile |
+| `task.completed` | `{ "result": { "account": { "id", "name" }, "storage_warning" } }` |
+
+`open_browser` defaults to `false` over RPC so a headless daemon never tries to start a GUI. Clients that can open a browser may pass `true`.
+
+Tokens are never returned over RPC. `auth.status` and `auth.accounts` expose only account IDs, names, timestamps, and the credential backend. Online `launch.start` renews the session internally and passes the token only to the game process.
+
+Launch parameters:
+
+| Field | Meaning |
+|---|---|
+| `offline_mode: true` | Requires `username`; derives the standard offline UUID and uses `legacy`/`offline` arguments. |
+| `offline_mode: false` | Renews the selected account and launches with `msa`, the profile UUID and name, the Minecraft access token, XUID, and UMC's OAuth client ID. `account_id` selects the account; the default is used when omitted. |
+| `account_id` | Account UUID. Omit when only one account is saved. |
+
+If the refresh token is rejected, `launch.start` fails with `-32007`, removes the saved credential, and asks the client to run `auth.login` again. If no account is signed in, the same code is returned with a sign-in hint.
+
 ## Shared data contracts
 
-`umc-api` defines transport-independent `InstanceConfig`, `LaunchRequest`, `MemoryConfig`, `GameProcess`, `TaskHandle`, and error category types for SDK and RPC adapters. Memory values are MiB. Instance game paths are relative to the managed data root.
+`umc-api` defines transport-independent `InstanceConfig`, `LaunchRequest`, `MemoryConfig`, `AuthStatus`, `AccountSummary`, `AuthRefreshResult`, `GameProcess`, `TaskHandle`, and error category types for SDK and RPC adapters. Memory values are MiB. Instance game paths are relative to the managed data root.
 
 ## Current limitations
 
 Instance configurations carry `schema_version`. Version 0 files migrate to version 1 on read and the old bytes are retained as `instance.json.bak`. Writes use a synced temporary file and atomic rename. A corrupt primary is quarantined and restored from a valid backup. If no backup remains, `instance.repair` can rebuild the config only when the version metadata and install record agree; game data is preserved. Unrecoverable config errors are surfaced by `instance.list` instead of silently hiding that directory.
 
-The current vanilla launch path is explicitly offline mode; Microsoft authentication is not implemented. Managed Java download is opt-in, uses Mojang's runtime catalog, and verifies catalog manifests and each runtime file by SHA-1 and size. Launch prefers a compatible managed runtime for the release's Mojang component, then checks system Java. `java.detect` reports an installed but incompatible Java so clients can explain the required version. Loader instances are not supported by the vanilla installer. Removal refuses running processes and refuses to delete when process state cannot be validated. CLI launch waits for the game to exit; stdout/stderr are written to `instances/<id>/logs/umc-console.log` so they cannot corrupt the stdio RPC stream.
+The vanilla launch path supports both explicit offline mode and Microsoft-authenticated online mode. Online launch renews the stored refresh token, walks Xbox Live/XSTS/Minecraft services, and passes the resulting session to the game; loader instances still cannot be launched. Managed Java download is opt-in, uses Mojang's runtime catalog, and verifies catalog manifests and each runtime file by SHA-1 and size. Launch prefers a compatible managed runtime for the release's Mojang component, then checks system Java. `java.detect` reports an installed but incompatible Java so clients can explain the required version. Removal refuses running processes and refuses to delete when process state cannot be validated. CLI launch waits for the game to exit; stdout/stderr are written to `instances/<id>/logs/umc-console.log` so they cannot corrupt the stdio RPC stream.
 
 Loader adapters currently provide version discovery and a loader-specific install preflight only. Fabric plans use Fabric Meta's launcher profile; Forge and NeoForge plans identify their own Maven installer artifacts and checksum sidecars. `loader.plan` does not download, execute installers, modify an instance, or make loader instances launchable yet. Custom provider code can be registered by a trusted Rust host; providers are not loaded dynamically and daemon providers must be configured by the daemon host. CurseForge and Modrinth content APIs are separate from loader installation and are not part of these adapters.
 

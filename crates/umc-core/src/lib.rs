@@ -5,12 +5,13 @@ use std::{
     sync::{Arc, Mutex},
 };
 use umc_api::{
-    CreateInstanceRequest, InstallRequest, JavaRuntimeInstallRequest, RpcError, RpcRequest,
-    RpcResponse, UMC_API_VERSION, VersionManifest,
+    CreateInstanceRequest, InstallRequest, JavaRuntimeInstallRequest, LaunchRequest, RpcError,
+    RpcRequest, RpcResponse, UMC_API_VERSION, VersionManifest,
 };
 use umc_loader_api::{LoaderId, LoaderInstallRequest};
 use umc_loader_registry::LoaderRegistry;
 pub mod auth;
+mod credentials;
 mod daemon;
 mod engine;
 mod tasks;
@@ -32,6 +33,7 @@ pub struct UmcCore {
     instance_locks: Arc<Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>>,
     tasks: TaskManager,
     loaders: LoaderRegistry,
+    auth: auth::AuthManager,
 }
 
 impl UmcCore {
@@ -50,6 +52,7 @@ impl UmcCore {
         };
         Self {
             tasks: TaskManager::new(data_dir.clone()),
+            auth: auth::AuthManager::new(data_dir.clone(), auth::MicrosoftOAuthConfig::default()),
             loaders,
             data_dir,
             instance_locks: Arc::new(Mutex::new(HashMap::new())),
@@ -94,7 +97,7 @@ impl UmcCore {
                 serde_json::json!({"name":"UMC","version":env!("CARGO_PKG_VERSION"),"api_versions":[UMC_API_VERSION]}),
             ),
             "system.capabilities" => Ok(
-                serde_json::json!({"capabilities":["system","version.list","instance.create","instance.list","instance.get","instance.remove","instance.repair","instance.install","loader.list","loader.versions","loader.plan","java.detect","java.runtime.list","java.runtime.install","java.runtime.remove","launch.offline","process.list","process.status","process.stop","task.get","task.cancel","task.events","rpc.stdio","rpc.local_daemon"]}),
+                serde_json::json!({"capabilities":["system","version.list","instance.create","instance.list","instance.get","instance.remove","instance.repair","instance.install","loader.list","loader.versions","loader.plan","java.detect","java.runtime.list","java.runtime.install","java.runtime.remove","launch.offline","launch.online","auth.status","auth.accounts","auth.login","auth.refresh","auth.logout","process.list","process.status","process.stop","task.get","task.cancel","task.events","rpc.stdio","rpc.local_daemon"]}),
             ),
             "loader.list" => {
                 serde_json::to_value(self.loaders.available()).map_err(|e| (-32001, e.to_string()))
@@ -363,35 +366,160 @@ impl UmcCore {
                     .map_err(|e| (-32010, e)),
                 None => Err((-32602, "runtime_id is required".into())),
             },
-            "launch.start" => {
-                let instance_id = req
+            "auth.status" => self.auth.status().await.map_err(|e| (-32007, e)),
+            "auth.accounts" => self
+                .auth
+                .accounts()
+                .await
+                .and_then(|accounts| serde_json::to_value(accounts).map_err(|e| e.to_string()))
+                .map_err(|e| (-32007, e)),
+            "auth.logout" => {
+                let account_id = req
                     .params
-                    .get("instance_id")
+                    .get("account_id")
                     .and_then(serde_json::Value::as_str);
-                let username = req
+                self.auth
+                    .logout(account_id)
+                    .await
+                    .map(|account_id| {
+                        serde_json::json!({"account_id":account_id,"status":"removed"})
+                    })
+                    .map_err(|e| (-32007, e))
+            }
+            "auth.refresh" => {
+                let account_id = req
                     .params
-                    .get("username")
+                    .get("account_id")
                     .and_then(serde_json::Value::as_str);
-                match (instance_id, username) {
-                    _ if req.params.get("offline_mode").and_then(serde_json::Value::as_bool) != Some(true) => Err((-32007, "Online authentication is not implemented; set offline_mode=true for local/offline play".into())),
-                    (Some(id), Some(name)) => match self.instance_lock(id) {
-                        Ok(lock) => {
-                            let _guard = lock.lock().await;
-                            engine::launch_vanilla(
-                                &self.data_dir,
-                                id,
-                                name,
-                                req.params.get("java_path").and_then(serde_json::Value::as_str),
-                                req.params["extra_jvm_args"].as_array().map(|v| v.iter().filter_map(serde_json::Value::as_str).map(str::to_owned).collect::<Vec<_>>()).as_deref().unwrap_or(&[]),
-                                req.params["extra_game_args"].as_array().map(|v| v.iter().filter_map(serde_json::Value::as_str).map(str::to_owned).collect::<Vec<_>>()).as_deref().unwrap_or(&[]),
-                                serde_json::from_value(req.params["memory"].clone()).ok(),
-                                req.params["resolution"]["width"].as_u64().zip(req.params["resolution"]["height"].as_u64()).map(|(w,h)|(w as u32,h as u32)),
-                                req.params["fullscreen"].as_bool().unwrap_or(false),
-                            ).await.and_then(|process| serde_json::to_value(process).map_err(|e| e.to_string())).map_err(|e| (-32010, e))
+                self.auth
+                    .refresh_session(account_id, |_| {})
+                    .await
+                    .map(|session| {
+                        serde_json::json!({
+                            "account":{"id":session.profile.id,"name":session.profile.name},
+                            "minecraft_expires_in":session.minecraft_expires_in,
+                        })
+                    })
+                    .map_err(|e| (-32007, e))
+            }
+            "auth.login" => {
+                let open_browser = req
+                    .params
+                    .get("open_browser")
+                    .and_then(serde_json::Value::as_bool)
+                    .unwrap_or(false);
+                let redirect_uri = req
+                    .params
+                    .get("redirect_uri")
+                    .and_then(serde_json::Value::as_str)
+                    .map(str::to_owned);
+                let auth = self.auth.clone();
+                self.tasks
+                    .spawn("auth.login", 15 * 60, move |task| async move {
+                        let mut config = auth.config().clone();
+                        if let Some(uri) = redirect_uri {
+                            config.redirect_uri = uri;
                         }
-                        Err(e) => Err((-32001, e)),
-                    },
-                    _ => Err((-32602, "launch.start requires instance_id and username; this build only supports explicitly offline launch".into())),
+                        let flow = auth::LoginFlow::start_with_config(config, open_browser).await?;
+                        task.emit(
+                            "auth.url",
+                            serde_json::json!({
+                                "url": flow.auth_url(),
+                                "redirect_uri": flow.redirect_uri(),
+                            }),
+                        );
+                        if let Some(error) = flow.browser_error() {
+                            task.emit("auth.browser_error", serde_json::json!({"error": error}));
+                        }
+                        let oauth = flow.wait().await?;
+                        let progress_task = task.clone();
+                        let session =
+                            auth::complete_minecraft_login_with_progress(&oauth, |stage| {
+                                progress_task
+                                    .emit("auth.stage", serde_json::json!({"stage": stage}));
+                            })
+                            .await?;
+                        let (record, warning) = auth.save_session(&session).await?;
+                        Ok(serde_json::json!({
+                            "account": {"id": record.account_id, "name": record.username},
+                            "storage_warning": warning,
+                        }))
+                    })
+                    .await
+                    .and_then(|v| serde_json::to_value(v).map_err(|e| e.to_string()))
+                    .map_err(|e| (-32007, e))
+            }
+            "launch.start" => {
+                let request = match serde_json::from_value::<LaunchRequest>(req.params.clone()) {
+                    Ok(request) => request,
+                    Err(error) => {
+                        return RpcResponse {
+                            jsonrpc: "2.0".into(),
+                            id,
+                            result: None,
+                            error: Some(RpcError {
+                                code: -32602,
+                                message: error.to_string(),
+                                data: None,
+                            }),
+                        };
+                    }
+                };
+                let identity_result: Result<engine::LaunchIdentity, (i32, String)> =
+                    if request.offline_mode {
+                        engine::LaunchIdentity::offline(&request.username).map_err(|e| (-32602, e))
+                    } else {
+                        self.auth
+                            .refresh_session(request.account_id.as_deref(), |_| {})
+                            .await
+                            .map(|session| engine::LaunchIdentity::Online {
+                                username: session.profile.name,
+                                uuid: session.profile.id,
+                                access_token: session.minecraft_access_token,
+                                xuid: session.xuid,
+                                client_id: self.auth.config().client_id.clone(),
+                            })
+                            .map_err(|e| (-32007, e))
+                    };
+                let identity = match identity_result {
+                    Ok(identity) => identity,
+                    Err((code, message)) => {
+                        return RpcResponse {
+                            jsonrpc: "2.0".into(),
+                            id,
+                            result: None,
+                            error: Some(RpcError {
+                                code,
+                                message,
+                                data: None,
+                            }),
+                        };
+                    }
+                };
+                let instance_id = request.instance_id.clone();
+                match self.instance_lock(&instance_id) {
+                    Ok(lock) => {
+                        let _guard = lock.lock().await;
+                        let extra_jvm_args = request.extra_jvm_args;
+                        let extra_game_args = request.extra_game_args;
+                        engine::launch_vanilla(
+                            &self.data_dir,
+                            &instance_id,
+                            identity,
+                            request.java_path.as_deref(),
+                            &extra_jvm_args,
+                            &extra_game_args,
+                            request.memory,
+                            request.resolution.map(|value| (value.width, value.height)),
+                            request.fullscreen,
+                        )
+                        .await
+                        .and_then(|process| {
+                            serde_json::to_value(process).map_err(|e| e.to_string())
+                        })
+                        .map_err(|e| (-32010, e))
+                    }
+                    Err(e) => Err((-32001, e)),
                 }
             }
             _ => Err((-32601, format!("Method not found: {}", req.method))),

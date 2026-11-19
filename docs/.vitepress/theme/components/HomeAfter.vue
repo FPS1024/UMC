@@ -16,7 +16,7 @@ const en = {
     lead: 'Every surface delegates to the same umc-core implementation, so behavior and state stay consistent whether you embed UMC or run it beside your process.',
     sdk: { title: 'Rust SDK', desc: 'Typed methods for versions, instances, tasks, Java, and processes — in your process.', code: 'umc-sdk' },
     daemon: { title: 'Local daemon', desc: 'Newline-delimited JSON-RPC over a Unix socket or Windows named pipe. No TCP listener.', code: 'umcd' },
-    cli: { title: 'CLI', desc: 'Script installs, inspect tasks, and launch offline clients without writing code.', code: 'umc' },
+    cli: { title: 'CLI', desc: 'Script installs, inspect tasks, and launch offline or online without writing code.', code: 'umc' },
   },
   quickstart: {
     eyebrow: 'Quickstart',
@@ -28,11 +28,11 @@ const en = {
   architecture: {
     eyebrow: 'Architecture',
     title: 'Headless by design',
-    lead: 'UMC owns the launcher work. Your application owns the interface, accounts, and product experience.',
+    lead: 'UMC owns the launcher work. Your application owns the interface and product experience.',
     nodes: [
-      { kicker: '01', title: 'Your application', desc: 'Desktop GUI, server tool, or automation script.', tags: ['UI', 'accounts'] },
+      { kicker: '01', title: 'Your application', desc: 'Desktop GUI, server tool, or automation script.', tags: ['UI', 'workflow'] },
       { kicker: '02', title: 'umc-core', desc: 'Install, verify, launch, supervise, persist.', tags: ['Rust', 'local-first', 'no telemetry'] },
-      { kicker: '03', title: 'Minecraft', desc: 'Java Edition, installed into isolated instances.', tags: ['vanilla', 'offline'] },
+      { kicker: '03', title: 'Minecraft', desc: 'Java Edition, installed into isolated instances.', tags: ['vanilla', 'online'] },
     ],
   },
   status: {
@@ -42,6 +42,8 @@ const en = {
       'Vanilla version discovery and verified downloads',
       'Isolated instances with config migration and repair',
       'Explicit offline launch with process supervision',
+      'Microsoft account sign-in with silent session renewal',
+      'Authenticated vanilla online launch',
       'Managed Mojang Java runtime provisioning',
       'Persistent install tasks with progress and cancellation',
       'JSON-RPC, local daemon, and Rust SDK parity',
@@ -49,7 +51,6 @@ const en = {
     nextPill: 'In development',
     nextTitle: 'On the roadmap',
     nextItems: [
-      'Microsoft account authentication and online play',
       'Fabric, Forge, and NeoForge install and launch',
       'Mod, modpack, and resource pack management',
       'Windows and macOS ports',
@@ -75,7 +76,7 @@ const zh = {
     lead: '所有接入方式都委托给同一个 umc-core 实现，因此无论嵌入 UMC 还是与进程并行运行，行为和状态都保持一致。',
     sdk: { title: 'Rust SDK', desc: '在当前进程内提供版本、实例、任务、Java 和进程的类型化方法。', code: 'umc-sdk' },
     daemon: { title: '本地守护进程', desc: '通过 Unix Socket 或 Windows 命名管道提供换行分隔 JSON-RPC。没有 TCP 监听。', code: 'umcd' },
-    cli: { title: 'CLI', desc: '不用写代码即可脚本化安装、查看任务并离线启动客户端。', code: 'umc' },
+    cli: { title: 'CLI', desc: '不用写代码即可脚本化安装、查看任务并离线或在线启动客户端。', code: 'umc' },
   },
   quickstart: {
     eyebrow: '快速开始',
@@ -87,11 +88,11 @@ const zh = {
   architecture: {
     eyebrow: '架构',
     title: '无界面设计',
-    lead: 'UMC 负责启动器工作。你的应用负责界面、账号和产品体验。',
+    lead: 'UMC 负责启动器工作。你的应用负责界面和产品体验。',
     nodes: [
-      { kicker: '01', title: '你的应用', desc: '桌面 GUI、服务器工具或自动化脚本。', tags: ['界面', '账号'] },
+      { kicker: '01', title: '你的应用', desc: '桌面 GUI、服务器工具或自动化脚本。', tags: ['界面', '工作流'] },
       { kicker: '02', title: 'umc-core', desc: '安装、校验、启动、监管、持久化。', tags: ['Rust', '本地优先', '无遥测'] },
-      { kicker: '03', title: 'Minecraft', desc: 'Java Edition，安装到独立实例中。', tags: ['原版', '离线'] },
+      { kicker: '03', title: 'Minecraft', desc: 'Java Edition，安装到独立实例中。', tags: ['原版', '在线'] },
     ],
   },
   status: {
@@ -101,6 +102,8 @@ const zh = {
       '原版版本发现与已验证下载',
       '带配置迁移和修复的独立实例',
       '带进程监管的显式离线启动',
+      'Microsoft 账号登录与静默会话续期',
+      '原版在线认证启动',
       'Mojang 托管 Java 运行时安装',
       '带进度和取消的持久化安装任务',
       'JSON-RPC、本地守护进程与 Rust SDK 能力一致',
@@ -108,7 +111,6 @@ const zh = {
     nextPill: '开发中',
     nextTitle: '路线图',
     nextItems: [
-      'Microsoft 账号认证与在线游戏',
       'Fabric、Forge 和 NeoForge 安装与启动',
       '模组、整合包和资源包管理',
       'Windows 和 macOS 移植',
@@ -202,7 +204,8 @@ const t = computed(() => (isChinese.value ? zh : en))
 <span class="umc-c-out">→ instance-8f14d9 created</span>
 <span class="umc-c-prompt">$</span> umc instance install instance-8f14d9
 <span class="umc-c-prompt">$</span> umc java install 1.21.1
-<span class="umc-c-prompt">$</span> umc launch instance-8f14d9 Steve --offline
+<span class="umc-c-prompt">$</span> umc auth login
+<span class="umc-c-prompt">$</span> umc launch instance-8f14d9 --online
 <span class="umc-c-out">→ Minecraft 1.21.1 running</span></code></pre>
       </div>
     </section>

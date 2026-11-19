@@ -9,7 +9,8 @@ This Privacy Policy explains what UMC (Universal Minecraft Core) collects, sends
 - UMC does not operate a user account service, telemetry endpoint, analytics pipeline, advertising system, crash-reporting service, cloud sync, or remote management service.
 - UMC stores game files, instances, runtimes, task state, and logs locally on your device.
 - Microsoft sign-in happens on Microsoft's pages. UMC never receives your Microsoft password.
-- The current version does not persist Microsoft or Minecraft tokens to disk. Tokens exist in process memory only and are discarded when the command exits.
+- The current version stores only the Microsoft refresh token, plus non-secret account metadata. Microsoft, Xbox, XSTS, and Minecraft access tokens are held in process memory and are not persisted.
+- Online launch uses the stored refresh token to obtain fresh tokens without opening a browser.
 - Version lookup, installation, and loader metadata requests go directly to the relevant upstream services, which may receive ordinary connection metadata such as your IP address.
 
 ## Data stored on your device
@@ -23,8 +24,10 @@ UMC keeps its data under `UMC_DATA_DIR` (or `./umc-data` when developing). This 
 | Task and process records | Lets the daemon report progress, recover interrupted work, and track running games. |
 | Logs | Captures installation progress, launch output, and errors for troubleshooting. |
 | Version and metadata cache | Avoids repeated upstream requests. |
+| Account metadata under `accounts/` | Minecraft username, UUID, last sign-in time, default-account marker, and credential backend. Contains no tokens. |
+| Refresh token | Stored in the OS keyring when available, otherwise in `credentials/<account-id>.json` with `0600` permissions. |
 
-UMC does not store your Microsoft password. It also does not store Microsoft or Minecraft tokens in the current version.
+UMC does not store your Microsoft password. Microsoft, Xbox, XSTS, and Minecraft access tokens are not written to disk.
 
 ## Microsoft account sign-in
 
@@ -37,20 +40,20 @@ When you run `umc auth login`, the following happens:
 5. UMC sends the Microsoft access token to Xbox Live user authentication, XSTS authorization, and Minecraft services login, and receives Xbox and XSTS tokens plus a Minecraft access token.
 6. UMC requests the Minecraft profile (username, UUID, skins, and capes) to confirm the account.
 
-The requested scope is `XboxLive.signin offline_access`. `offline_access` allows Microsoft to return a refresh token; the current version receives it but does not save it.
+The requested scope is `XboxLive.signin offline_access`. `offline_access` allows Microsoft to return a refresh token, which UMC stores so later online launches do not require a browser.
 
 Account data handled during sign-in:
 
 | Data | Current handling |
 |---|---|
 | Microsoft password | Never seen or stored by UMC. Entered only on Microsoft's pages. |
-| Microsoft access token | Kept in memory for the duration of the sign-in command; not written to disk. |
-| Microsoft refresh token | Received but discarded when the process exits; not written to disk. |
+| Microsoft access token | Kept in memory for the duration of the command; not written to disk. |
+| Microsoft refresh token | Stored in the OS keyring, or in a `0600` file when no keyring is available. Used for silent renewal. |
 | Xbox Live and XSTS tokens | Kept in memory during the login chain; not written to disk. |
-| Minecraft access token | Kept in memory; not written to disk. |
-| Minecraft profile (name, UUID, skins, capes) | Displayed in the terminal and held in memory for the command; not persisted. |
+| Minecraft access token | Kept in memory and passed to the game process; not written to disk. |
+| Minecraft profile (name, UUID, skins, capes) | Stored as non-secret account metadata (name and UUID). Skins and capes are not persisted. |
 
-A future version is expected to store the refresh token in OS credential storage so you can sign in without reopening the browser. When that happens, this policy will describe the storage location, removal command, and sign-out behavior before the feature ships.
+Deleting the stored credential with `umc auth logout` removes the refresh token and account metadata from this machine. It does not change your Microsoft account.
 
 ## Network requests
 
@@ -97,7 +100,7 @@ Local data remains until you delete it:
 
 - Delete an instance in UMC or remove its directory to delete that instance's files, settings, and logs.
 - Delete `UMC_DATA_DIR` to remove all UMC-managed data.
-- Tokens are discarded when the sign-in process exits, so there is nothing token-related to delete in the current version.
+- Run `umc auth logout` to remove the stored refresh token and account metadata. Deleting `UMC_DATA_DIR` also removes the file fallback; remove keyring entries with `auth logout` so the OS credential store is cleaned too.
 - Uninstalling UMC does not necessarily delete `UMC_DATA_DIR`; remove it yourself if you want a clean removal.
 
 Data sent to Microsoft, Mojang, or other third parties is retained by those services under their own policies.
@@ -108,7 +111,7 @@ Microsoft, Xbox, Minecraft, Mojang, Fabric, Forge, NeoForge, mod platforms, and 
 
 ## Changes to this policy
 
-This policy will be updated when UMC adds account persistence, telemetry, hosted services, crash reporting, mod distribution, or other material data flows. The date at the top shows the last change, and material changes will be noted in the release notes.
+This policy will be updated when UMC adds telemetry, hosted services, crash reporting, mod distribution, or other material data flows. The date at the top shows the last change, and material changes will be noted in the release notes.
 
 ## Contact
 

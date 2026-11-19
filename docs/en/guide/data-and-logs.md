@@ -47,8 +47,15 @@ The daemon and every client must use the same data directory.
     events/<task-id>.jsonl         # sequenced event history
   processes/
     <process-id>.json              # game process state
+  accounts/
+    <account-id>.json              # non-secret account metadata
+    default                        # default account ID
+  credentials/
+    <account-id>.json              # refresh-token fallback (0600, no keyring)
   umc.sock                         # Unix daemon socket (when umcd is running)
 ```
+
+When the OS keyring is available, refresh tokens live there instead of `credentials/`.
 
 On Windows the daemon uses a named pipe instead of `umc.sock`.
 
@@ -63,6 +70,7 @@ On Windows the daemon uses a named pipe instead of `umc.sock`.
 | `instances/<id>/logs/` | Yes, when no game is running | Console history is lost |
 | `tasks/` | Not recommended while tasks are active | Task history and recovery state are lost |
 | `processes/` | Not recommended | Process reconciliation state is lost |
+| `accounts/`, `credentials/` | Use `umc auth logout` | Stored sign-in state is removed |
 | `umc.sock` | Only when no daemon is running | A stale socket can be removed; the daemon recreates it |
 
 Do not delete `instance.json` or `install.json` by hand. Use `umc instance repair` or reinstall.
@@ -117,6 +125,14 @@ cp -a "$UMC_DATA_DIR" "$HOME/umc-backup"
 ```
 
 A backup taken while a download or game is running may contain partial or inconsistent state.
+
+::: warning Credentials in backups
+
+If UMC is using the file credential fallback, `credentials/` inside the backup contains the
+Microsoft refresh token. Store the backup privately, or run `umc auth logout` before copying and
+sign in again after restoring.
+
+:::
 
 ## Restore
 

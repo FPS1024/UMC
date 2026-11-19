@@ -165,11 +165,43 @@ launcher.remove_java_runtime("java-runtime-delta@21.0.5").await?;
 
 `detect_java(Some(path), minimum)` 接受显式 Java 路径。`install_java_runtime` 要求 Minecraft 版本元数据已经安装。
 
+## 账号
+
+```rust
+let status = launcher.auth_status().await?;
+println!("backend: {}", status.credential_backend);
+
+if !status.signed_in {
+    let handle = launcher.auth_login(true, None).await?;
+    loop {
+        for event in launcher.task_events(&handle.task_id, 0, 5_000).await? {
+            if event.event == "auth.url" {
+                println!("open: {}", event.data["url"]);
+            }
+        }
+        let task = launcher.task(&handle.task_id).await?;
+        if task.status != umc_sdk::TaskStatus::Running
+            && task.status != umc_sdk::TaskStatus::Queued
+        {
+            break;
+        }
+    }
+}
+
+let refreshed = launcher.auth_refresh(None).await?;
+println!("{} expires in {:?}s", refreshed.account.name, refreshed.minecraft_expires_in);
+
+launcher.auth_logout(None).await?;
+```
+
+`auth_login(open_browser, redirect_uri)` 返回任务句柄。`open_browser` 为 `false` 时，先读取 `auth.url` 再自行打开浏览器。任务结果包含账号 ID 和名称；Token 不会出现在 RPC 接口中。`auth_refresh` 和在线 `launch` 会使用已保存的刷新 Token 续期会话。
+
 ## 启动与进程
 
 ```rust
 use umc_sdk::LaunchRequest;
 
+// 离线启动
 let process = launcher
     .launch(LaunchRequest {
         instance_id: config.id.clone(),
@@ -185,6 +217,26 @@ let process = launcher
     })
     .await?;
 
+// 使用默认或指定账号在线启动
+let process = launcher
+    .launch(LaunchRequest {
+        instance_id: config.id.clone(),
+        username: String::new(),
+        offline_mode: false,
+        account_id: None,
+        java_path: None,
+        memory: None,
+        resolution: None,
+        fullscreen: false,
+        extra_jvm_args: vec![],
+        extra_game_args: vec![],
+    })
+    .await?;
+```
+
+在线启动时 `username` 会被忽略，由已登录档案提供名称和 UUID。保存了多个账号时使用 `account_id`。使用 `java_path` 覆盖 Java，使用 `memory` 覆盖实例内存，使用 `resolution` / `fullscreen` / 额外参数设置启动选项。
+
+```rust
 println!("pid {} process {}", process.pid, process.process_id);
 
 let current = launcher.process_status(&process.process_id).await?;
@@ -192,8 +244,6 @@ let all = launcher.processes().await?;
 
 launcher.stop_process(&process.process_id).await?;
 ```
-
-`launch` 会拒绝 `offline_mode: false`。使用 `java_path` 覆盖 Java，使用 `memory` 覆盖实例内存，使用 `resolution` / `fullscreen` / 额外参数设置启动选项。
 
 进程状态需要轮询；没有进程事件流。进程内启动的监管逻辑在你的进程内。如果游戏需要比 UI 或客户端进程存活更久，请使用守护进程模式。
 

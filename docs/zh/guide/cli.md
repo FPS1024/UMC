@@ -16,7 +16,7 @@ source: en/guide/cli.md
 | 错误 | 退出状态非零；CLI 会打印错误消息 |
 | 配置文件 | 无；数据目录通过环境变量选择 |
 | Shell 执行 | UMC 不提供任意 shell 执行 |
-| 在线模式 | 未实现；启动必须传入 `--offline` |
+| 在线模式 | 可通过 `--online` 使用；需要先运行 `umc auth login` |
 
 大多数命令不需要 `umcd`。例外是 `umc task ...`，它会连接本地守护进程。两种方式的区别见 [任务与本地守护进程](./tasks-and-daemon)。
 
@@ -40,7 +40,13 @@ umc task events <task-id> [after-sequence]
 umc process list
 umc process status <process-id>
 umc process stop <process-id>
-umc launch <instance-id> <offline-username> --offline
+umc auth login [--no-browser] [--redirect-uri <uri>]
+umc auth status
+umc auth accounts
+umc auth refresh [--account <account-id>]
+umc auth logout [--account <account-id>]
+umc launch <instance-id> --online [--account <account-id>]
+umc launch <instance-id> --offline <username>
 umc rpc --stdio
 umcd
 ```
@@ -193,19 +199,56 @@ umc java install 1.21.1
 
 发送终止信号前，会校验 `-Dumc.process_id` 标记。在 Unix 上 UMC 发送 `SIGTERM`；在 Windows 上会终止已验证的进程树。过期或已被复用的 PID 永远不会被误杀。
 
-## 启动命令
+## 认证命令
 
-### `umc launch <instance-id> <offline-username> --offline`
+### `umc auth login [--no-browser] [--redirect-uri <uri>]`
 
-以显式离线模式启动 Minecraft，然后等待游戏退出。它会输出初始 `GameProcess` JSON 和最终状态 JSON。
+使用 PKCE 和回环回调启动 Microsoft OAuth 流程。默认会在浏览器中打开授权 URL；`--no-browser` 只打印 URL。回调完成后，UMC 会依次完成 Xbox Live、XSTS 和 Minecraft 登录，并且只保存刷新 Token。
 
 ```sh
-umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 Steve --offline
+umc auth login
+umc auth login --no-browser
 ```
 
-- 用户名必须为 1–16 个 ASCII 字母、数字或下划线。
+命令会输出账号名称和 UUID，不会打印 Token。
+
+### `umc auth status`
+
+以 JSON 输出凭据后端（`keyring` 或 `file`）、默认账号和所有已保存账号。不会发起网络请求。
+
+### `umc auth accounts`
+
+以 JSON 数组输出已保存的账号元数据。
+
+### `umc auth refresh [--account <account-id>]`
+
+使用已保存的刷新 Token 续期所选账号的 Minecraft 会话，不会打开浏览器。存在多个账号时用 `--account` 选择。
+
+### `umc auth logout [--account <account-id>]`
+
+删除所选账号已保存的刷新 Token 和账号元数据。不会更改 Microsoft 账号或 Minecraft 档案。
+
+## 启动命令
+
+### `umc launch <instance-id> --online [--account <account-id>]`
+
+刷新所选 Microsoft 账号的会话，以认证身份启动 Minecraft，然后等待游戏退出。
+
+```sh
+umc auth login
+umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 --online
+```
+
+### `umc launch <instance-id> --offline <username>`
+
+以显式离线模式启动 Minecraft，然后等待游戏退出。用户名必须为 1–16 个 ASCII 字母、数字或下划线。
+
+```sh
+umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 --offline Steve
+```
+
 - 实例必须已安装。
-- 必须传入 `--offline`；当前版本没有在线模式。
+- `--online` 和 `--offline` 必须且只能选择一个。
 - CLI 启动命令不提供内存、分辨率、全屏、JVM 参数或 Java 路径覆盖。这些字段可通过 JSON-RPC `launch.start` 和 Rust SDK 使用。
 
 参数细节、日志和进程行为见 [启动与进程](./launching)。

@@ -8,7 +8,7 @@ UMC 是 Minecraft: Java Edition 的无界面启动引擎。本节介绍 `umc` CL
 
 ::: tip 本版本范围
 
-当前的 Linux x86_64 版本支持**原版安装**和**显式离线启动**。Microsoft 认证、需要认证的在线游戏、加载器安装和整合包管理尚未实现。
+当前的 Linux x86_64 版本支持**原版安装**、**离线启动**，以及**通过 Microsoft 登录启动原版在线游戏**。加载器安装、加载器在线启动和整合包管理尚未实现。
 
 :::
 
@@ -18,6 +18,7 @@ UMC 是 Minecraft: Java Edition 的无界面启动引擎。本节介绍 `umc` CL
 - 创建带独立游戏目录和 `instance.json` 的隔离实例。
 - 下载客户端、库、资源、原生库和日志配置，并校验 SHA-1 与大小。
 - 检测兼容的 Java，或为指定 Minecraft 版本安装 Mojang 托管运行时。
+- 使用 Microsoft 账号登录，安全保存刷新 Token，并在无需重新打开浏览器的情况下启动在线认证会话。
 - 以离线模式启动已安装实例，并监管游戏进程。
 - 查看、取消和恢复安装任务；列出并停止游戏进程。
 - 从备份或已验证的安装记录修复实例配置。
@@ -27,9 +28,8 @@ UMC 是 Minecraft: Java Edition 的无界面启动引擎。本节介绍 `umc` CL
 
 | 领域 | 当前状态 |
 |---|---|
-| Microsoft 账号登录 | 未实现 |
-| 需要认证的在线游戏 | 未实现 |
 | Fabric / Forge / NeoForge 安装与启动 | 仅版本发现和预检计划 |
+| 通过加载器适配器在线启动 | 未实现；在线启动仅支持原版 |
 | 模组、整合包、资源包 | 未实现 |
 | Windows 和 macOS | 计划中的移植，不属于当前发布目标 |
 | 通过 UMC 向游戏输入控制台命令 | 不可用；游戏标准输入是关闭的 |
@@ -62,8 +62,14 @@ umc java detect 21
 # 或安装 Mojang 运行时
 umc java install 1.21.1
 
-# 5. 离线启动
-umc launch <instance-id> Steve --offline
+# 5. 使用 Microsoft 账号登录
+umc auth login
+
+# 6. 在线启动
+umc launch <instance-id> --online
+
+# 或用于本地测试的离线启动
+umc launch <instance-id> --offline Steve
 ```
 
 上面的安装命令会等待任务完成，并把进度输出到 stderr。`umc task get` 等任务命令需要本地守护进程；参见 [任务与本地守护进程](./tasks-and-daemon)。
@@ -81,13 +87,82 @@ umc launch <instance-id> Steve --offline
 | 检测 Java | `umc java detect [minimum-major]` | [Java 运行时](./java) |
 | 列出托管运行时 | `umc java runtimes` | [Java 运行时](./java) |
 | 安装 Mojang 运行时 | `umc java install <minecraft-version>` | [Java 运行时](./java) |
-| 离线启动 | `umc launch <id> <username> --offline` | [启动与进程](./launching) |
+| 使用 Microsoft 登录 | `umc auth login` | 见 [Microsoft 账号](#microsoft-账号) |
+| 查看账号状态 | `umc auth status`、`umc auth accounts` | 见 [Microsoft 账号](#microsoft-账号) |
+| 续期会话 | `umc auth refresh [--account <id>]` | 见 [Microsoft 账号](#microsoft-账号) |
+| 退出登录 | `umc auth logout [--account <id>]` | 删除已保存的刷新 Token |
+| 在线启动 | `umc launch <id> --online [--account <id>]` | [启动与进程](./launching) |
+| 离线启动 | `umc launch <id> --offline <username>` | [启动与进程](./launching) |
 | 查看进程 | `umc process list`、`umc process status <id>` | [启动与进程](./launching) |
 | 停止进程 | `umc process stop <id>` | [启动与进程](./launching) |
 | 查看任务 | `umc task get <id>`、`umc task events <id>` | 需要 `umcd`；[任务与本地守护进程](./tasks-and-daemon) |
 | 取消任务 | `umc task cancel <id>` | 需要 `umcd` |
 | 启动守护进程 | `umcd` | [任务与本地守护进程](./tasks-and-daemon) |
 | 启动 stdio RPC 适配器 | `umc rpc --stdio` | [开发者集成](../development/) |
+
+## Microsoft 账号
+
+### 登录
+
+```sh
+umc auth login
+umc auth login --no-browser
+umc auth login --redirect-uri http://localhost
+```
+
+UMC 会在浏览器中打开 Microsoft 授权页面，并在临时回环端口监听回调。授权码通过 PKCE 和随机 `state` 值绑定到本次请求。UMC 永远不会收到你的 Microsoft 密码。
+
+Microsoft 登录完成后，UMC 会用授权码换取 Microsoft Token，依次通过 Xbox Live、XSTS 和 Minecraft 服务登录，并获取 Minecraft 档案。只有刷新 Token 会被保存。
+
+### 查看已保存账号
+
+```sh
+umc auth status
+umc auth accounts
+```
+
+`auth status` 会报告是否已登录、默认账号、凭据后端（`keyring` 或 `file`）以及存储警告。账号 ID 是 Minecraft UUID。
+
+### 无需浏览器续期
+
+在线启动会自动续期：
+
+```sh
+umc launch <instance-id> --online
+```
+
+也可以显式续期：
+
+```sh
+umc auth refresh
+umc auth refresh --account <account-id>
+```
+
+续期使用已保存的刷新 Token 获取新的 Microsoft、Xbox、XSTS 和 Minecraft Token，不会打开浏览器。如果 Microsoft 拒绝刷新 Token（例如修改密码或长期未使用），已保存的凭据会被删除，需要重新运行 `umc auth login`。
+
+### 多账号
+
+第一个账号会成为默认账号。保存了多个账号时，通过账号 ID 选择：
+
+```sh
+umc launch <instance-id> --online --account <account-id>
+```
+
+### 退出登录
+
+```sh
+umc auth logout
+umc auth logout --account <account-id>
+```
+
+退出登录会从本机删除已保存的刷新 Token 和账号元数据，不会更改你的 Microsoft 账号或 Minecraft 档案。
+
+### 凭据存储位置
+
+- **操作系统钥匙串** —— Linux 的 GNOME Keyring/KWallet、macOS Keychain 或 Windows Credential Manager。
+- **文件后备** —— 没有可用钥匙串时，使用 `UMC_DATA_DIR/credentials/<account-id>.json`，权限为 `0600`。
+
+设置 `UMC_CREDENTIAL_STORE=file` 可显式使用文件后端。未设置时，UMC 优先使用操作系统钥匙串，不可用时自动回退。Microsoft 访问 Token、Xbox/XSTS Token 和 Minecraft 访问 Token 永远不会写入磁盘。
 
 ## 两种长时间操作方式
 

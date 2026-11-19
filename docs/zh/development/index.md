@@ -57,9 +57,10 @@ CLI、Rust SDK、stdio 适配器和本地守护进程都委托给同一个 `umc-
 5. 创建实例。
 6. 启动 instance.install，并跟随 task.events。
 7. 检查 Java；必要时安装托管运行时。
-8. 以离线模式启动 launch.start。
-9. 轮询 process.status，直到 exited 或 failed。
-10. 按用户请求停止进程或删除实例。
+8. 检查 auth.status；应用需要在线游戏时运行 auth.login 并跟进任务事件。
+9. 使用 offline_mode 或 account_id 启动 launch.start。
+10. 轮询 process.status，直到 exited 或 failed。
+11. 按用户请求停止进程或删除实例。
 ```
 
 变更操作只使用一个控制面。CLI 和守护进程不共享进程内实例锁；不要同时通过两者启动同一个安装。

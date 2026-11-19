@@ -201,7 +201,7 @@ tasks/events/<task-id>.jsonl
   - Windows 命名管道使用仅所有者 ACL，并拒绝远程客户端。
   - 不监听 TCP。
 - RPC 不提供任意 shell 执行。
-- 由于 Microsoft 认证尚未实现，当前不存储 Token；未来的 Token 存储属于操作系统凭据存储，而不是实例 JSON 或日志。
+- 只持久化 Microsoft 刷新 Token，存入操作系统钥匙串或权限为 `0600` 的后备文件。Microsoft、Xbox、XSTS 和 Minecraft 访问 Token 永远不会写入实例 JSON 或日志。
 
 ## 并发
 
@@ -212,8 +212,7 @@ tasks/events/<task-id>.jsonl
 
 ## 已知限制
 
-- Microsoft 认证和在线游戏尚未实现。
-- 加载器安装和启动尚未实现；只有发现和预检计划。
+- 加载器安装和启动尚未实现；只有发现和预检计划。在线启动仅支持原版。
 - 模组、整合包和资源包管理尚未实现。
 - Windows 和 macOS 不在验证的发布目标中。
 - 尚未评估操作系统架构和版本规则条件。

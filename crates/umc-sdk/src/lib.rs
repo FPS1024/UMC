@@ -1,10 +1,10 @@
 //! Stable Rust entry point. It delegates every operation to `umc-core`.
 use std::{path::PathBuf, sync::Arc};
 pub use umc_api::{
-    CreateInstanceRequest, GameProcess, INSTANCE_CONFIG_SCHEMA_VERSION, InstallRequest,
-    InstanceConfig, JavaRuntimeInfo, JavaRuntimeInstallRequest, JavaRuntimeInstallResult,
-    LatestVersions, LaunchRequest, RepairInstanceResult, TaskEvent, TaskHandle, TaskInfo,
-    TaskStatus, VersionEntry,
+    AccountSummary, AuthRefreshResult, AuthStatus, CreateInstanceRequest, GameProcess,
+    INSTANCE_CONFIG_SCHEMA_VERSION, InstallRequest, InstanceConfig, JavaRuntimeInfo,
+    JavaRuntimeInstallRequest, JavaRuntimeInstallResult, LatestVersions, LaunchRequest,
+    RepairInstanceResult, TaskEvent, TaskHandle, TaskInfo, TaskStatus, VersionEntry,
 };
 use umc_core::UmcCore;
 use umc_loader_api::LoaderAdapter;
@@ -154,9 +154,6 @@ impl Launcher {
         .map_err(|e| e.to_string())
     }
     pub async fn launch(&self, request: LaunchRequest) -> Result<GameProcess, String> {
-        if !request.offline_mode {
-            return Err("This UMC build only supports explicit offline mode; online authentication is not implemented".into());
-        }
         serde_json::from_value(
             self.call(
                 "launch.start",
@@ -165,6 +162,45 @@ impl Launcher {
             .await?,
         )
         .map_err(|e| e.to_string())
+    }
+    pub async fn auth_status(&self) -> Result<AuthStatus, String> {
+        serde_json::from_value(self.call("auth.status", serde_json::Value::Null).await?)
+            .map_err(|e| e.to_string())
+    }
+    pub async fn accounts(&self) -> Result<Vec<AccountSummary>, String> {
+        serde_json::from_value(self.call("auth.accounts", serde_json::Value::Null).await?)
+            .map_err(|e| e.to_string())
+    }
+    /// Starts a Microsoft sign-in task. Poll `auth.url` and `auth.stage` events
+    /// with [`Launcher::task_events`] and read the result from [`Launcher::task`].
+    pub async fn auth_login(
+        &self,
+        open_browser: bool,
+        redirect_uri: Option<&str>,
+    ) -> Result<TaskHandle, String> {
+        let mut params = serde_json::json!({"open_browser": open_browser});
+        if let Some(uri) = redirect_uri {
+            params["redirect_uri"] = serde_json::Value::String(uri.to_owned());
+        }
+        serde_json::from_value(self.call("auth.login", params).await?).map_err(|e| e.to_string())
+    }
+    pub async fn auth_refresh(
+        &self,
+        account_id: Option<&str>,
+    ) -> Result<AuthRefreshResult, String> {
+        let params = match account_id {
+            Some(id) => serde_json::json!({"account_id": id}),
+            None => serde_json::json!({}),
+        };
+        serde_json::from_value(self.call("auth.refresh", params).await?).map_err(|e| e.to_string())
+    }
+    pub async fn auth_logout(&self, account_id: Option<&str>) -> Result<(), String> {
+        let params = match account_id {
+            Some(id) => serde_json::json!({"account_id": id}),
+            None => serde_json::json!({}),
+        };
+        self.call("auth.logout", params).await?;
+        Ok(())
     }
     pub async fn process_status(&self, process_id: &str) -> Result<GameProcess, String> {
         serde_json::from_value(

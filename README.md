@@ -79,8 +79,8 @@ instance data, errors, and process handling stay consistent.
 | Java detection and managed Mojang runtimes | ✅ Available |
 | Persistent tasks, local daemon, CLI, Rust SDK, JSON-RPC | ✅ Available |
 | Fabric / Forge / NeoForge version discovery and preflight | ✅ Available |
-| Microsoft authentication and online play | 🚧 In development |
-| Loader installation and launch | 🚧 In development |
+| Microsoft account sign-in and vanilla online launch | ✅ Available |
+| Loader installation and loader online launch | 🚧 In development |
 | Mods, modpacks, and resource packs | 🚧 Planned |
 | Windows and macOS ports | 🚧 Planned |
 
@@ -97,7 +97,14 @@ cargo build --workspace --locked --release
 ./target/release/umc instance create Survival 1.21.1
 ./target/release/umc instance install <instance-id>
 ./target/release/umc java install 1.21.1
-./target/release/umc launch <instance-id> Steve --offline
+./target/release/umc auth login
+./target/release/umc launch <instance-id> --online
+```
+
+Offline launch is still available for local testing:
+
+```sh
+./target/release/umc launch <instance-id> --offline Steve
 ```
 
 Or download the latest Linux archive from
@@ -107,7 +114,7 @@ Read the full [Quickstart](https://fps1024.github.io/UMC/en/guide/quickstart) fo
 Java provisioning, logs, and first-run details.
 
 > [!WARNING]
-> This release does not implement Microsoft authentication. `--offline` does not verify account ownership and does not enable authenticated online play.
+> Offline launch does not verify account ownership and cannot join authenticated servers. Use `umc auth login` plus `umc launch --online` for online play. UMC stores only the Microsoft refresh token in the OS keyring (or a `0600` file fallback) and never stores your password.
 
 ## Documentation
 

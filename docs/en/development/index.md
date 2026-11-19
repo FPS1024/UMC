@@ -65,9 +65,10 @@ compatible.
 5. Create an instance.
 6. Start instance.install and follow task.events.
 7. Check Java; install a managed runtime if needed.
-8. Start launch.start in offline mode.
-9. Poll process.status until exited or failed.
-10. Stop the process or remove the instance when requested.
+8. Check auth.status; run auth.login and follow its task events if the app needs online play.
+9. Start launch.start with offline_mode or account_id.
+10. Poll process.status until exited or failed.
+11. Stop the process or remove the instance when requested.
 ```
 
 Keep one control surface for mutations. The CLI and daemon do not share an in-process instance lock;

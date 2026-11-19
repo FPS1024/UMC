@@ -4,7 +4,7 @@ source: en/guide/quickstart.md
 
 # 快速开始
 
-从一台全新的 Linux 机器出发，用几条命令启动原版 Minecraft: Java Edition 客户端。UMC 会把游戏安装到独立实例中，并以显式离线模式启动。
+从一台全新的 Linux 机器出发，用几条命令启动原版 Minecraft: Java Edition 客户端。UMC 会把游戏安装到独立实例中，并可以离线启动或使用 Microsoft 账号启动。
 
 ::: tip 开始之前
 
@@ -87,21 +87,30 @@ umc java detect 21
 umc java runtimes
 ```
 
-## 5. 离线启动
+## 5. 登录并在线启动
 
 ```sh
-umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 Steve --offline
+umc auth login
+umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 --online
 ```
 
-把 `Steve` 替换为 1–16 个字符的离线用户名。CLI 会等待游戏退出，并把 stdout 和 stderr 写入 `instances/<instance-id>/logs/umc-console.log`。
+`umc auth login` 只需打开一次 Microsoft 登录页面并保存刷新 Token。之后的在线启动会静默续期。CLI 会等待游戏退出，并把 stdout 和 stderr 写入 `instances/<instance-id>/logs/umc-console.log`。
 
-::: warning 仅支持离线模式
+## 6. 离线启动用于测试
 
-当前版本没有实现 Microsoft 认证，因此不支持需要认证的在线游戏。必须显式传入 `--offline`，它不会验证账号所有权，不要把它当作 Microsoft 账号登录。
+```sh
+umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 --offline Steve
+```
+
+把 `Steve` 替换为 1–16 个字符的离线用户名。
+
+::: warning 离线模式
+
+离线模式不会验证账号所有权，也无法加入要求 Microsoft 账号的服务器。需要认证游戏时请使用 `--online`。
 
 :::
 
-## 6. 下一步
+## 7. 下一步
 
 - [用户指南](/zh/guide/user-guide) —— CLI、数据模型和工作流总览。
 - [CLI 参考](/zh/guide/cli) —— 所有命令、参数和输出约定。

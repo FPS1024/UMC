@@ -99,8 +99,12 @@ pub struct Resolution {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LaunchRequest {
     pub instance_id: String,
+    /// Required for offline mode; ignored for online launch, where the
+    /// signed-in Minecraft profile supplies the name.
+    #[serde(default)]
     pub username: String,
-    /// This scaffold only implements offline mode. Online authentication is not implied.
+    /// `true` launches with an offline identity. `false` renews the selected
+    /// Microsoft account's session and launches online.
     pub offline_mode: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub account_id: Option<String>,
@@ -116,6 +120,40 @@ pub struct LaunchRequest {
     pub extra_jvm_args: Vec<String>,
     #[serde(default)]
     pub extra_game_args: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AccountSummary {
+    pub account_id: String,
+    pub username: String,
+    pub last_login: String,
+    #[serde(default)]
+    pub credential_backend: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuthStatus {
+    pub signed_in: bool,
+    #[serde(default)]
+    pub default_account: Option<String>,
+    pub credential_backend: String,
+    #[serde(default)]
+    pub storage_warning: Option<String>,
+    #[serde(default)]
+    pub accounts: Vec<AccountSummary>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuthAccount {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuthRefreshResult {
+    pub account: AuthAccount,
+    #[serde(default)]
+    pub minecraft_expires_in: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

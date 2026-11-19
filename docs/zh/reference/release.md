@@ -10,7 +10,7 @@ source: en/reference/release.md
 - 最低支持的 Rust 版本（MSRV）：1.89。CI 使用 Rust 1.89 检查工作区，并使用稳定版 Rust 构建发布二进制。
 - 当前平台目标：Linux x86_64 GNU。Windows 和 macOS 仍是计划中的移植，其代码不在当前发布验证目标中。
 - 运行时验证目前仅限 Linux。构建成功并不代表守护进程 IPC 权限或游戏启动行为在其他操作系统上已验证。
-- UMC 0.1 支持原版 Minecraft Java Edition 安装和显式离线启动。Microsoft 认证以及加载器/整合包支持不在本发布范围内。
+- UMC 0.1 支持原版 Minecraft Java Edition 安装、Microsoft 账号登录、原版在线启动和显式离线启动。加载器安装和加载器启动不在本发布范围内。
 
 ## 版本兼容性
 

@@ -18,7 +18,7 @@ source: en/reference/rpc-v1.md
 {"jsonrpc":"2.0","id":1,"result":{"name":"UMC","version":"0.1.0","api_versions":["v1"]}}
 ```
 
-错误使用 JSON-RPC 保留错误码：`-32700`（解析）、`-32600`（无效请求）、`-32601`（未知方法）、`-32602`（无效参数）、`-32603`（内部）。UMC 服务端错误使用 `-32000..-32099`；当前映射：`-32001` 内部、`-32003` 资源/进程缺失、`-32005` 网络/安装、`-32007` 不支持的认证模式、`-32009` 实例操作、`-32010` Java/启动。错误码在 1.0 之前是暂定的，且不得编码 Rust 实现细节。
+错误使用 JSON-RPC 保留错误码：`-32700`（解析）、`-32600`（无效请求）、`-32601`（未知方法）、`-32602`（无效参数）、`-32603`（内部）。UMC 服务端错误使用 `-32000..-32099`；当前映射：`-32001` 内部、`-32003` 资源/进程缺失、`-32005` 网络/安装、`-32007` 认证/会话失败、`-32009` 实例操作、`-32010` Java/启动。错误码在 1.0 之前是暂定的，且不得编码 Rust 实现细节。
 
 ## 初步方法
 
@@ -41,7 +41,12 @@ source: en/reference/rpc-v1.md
 | `java.runtime.list` | `{}` | 已验证的 UMC 托管运行时 |
 | `java.runtime.install` | `{ "minecraft_version", "timeout_seconds?" }` | 排队安装已安装 Minecraft 版本所需的 Mojang 运行时组件 |
 | `java.runtime.remove` | `{ "runtime_id" }` | 从 UMC 托管运行时目录移除运行时 |
-| `launch.start` | `{ "instance_id", "username", "offline_mode": true, ... }` | 启动游戏进程并返回 UMC 进程 ID 和操作系统 PID |
+| `auth.status` | `{}` | 登录状态、默认账号、凭据后端、存储警告和已保存账号 |
+| `auth.accounts` | `{}` | 不含 Token 的已保存账号元数据 |
+| `auth.login` | `{ "open_browser"?, "redirect_uri"? }` | 排队交互式 Microsoft 登录任务并返回任务句柄 |
+| `auth.refresh` | `{ "account_id"? }` | 无需浏览器，续期所选账号的 Minecraft 会话 |
+| `auth.logout` | `{ "account_id"? }` | 删除所选账号的刷新 Token 和元数据 |
+| `launch.start` | `{ "instance_id", "offline_mode", "username"?, "account_id"?, ... }` | 启动游戏进程并返回 UMC 进程 ID 和操作系统 PID |
 | `process.list` | `{}` | 协调并列出持久化进程状态，适合客户端/守护进程重启后重连 |
 | `process.status` | `{ "process_id" }` | 协调后的进程状态和已知时的退出码 |
 | `process.stop` | `{ "process_id" }` | 校验身份后停止托管进程，包括守护进程重连后 |
@@ -49,15 +54,40 @@ source: en/reference/rpc-v1.md
 | `task.cancel` | `{ "task_id" }` | 请求取消排队中或运行中的任务 |
 | `task.events` | `{ "task_id", "after_sequence?", "wait_ms?" }` | 返回指定序号之后的持久化事件；`wait_ms` 最长长轮询 30 秒 |
 
+## 认证流程
+
+`auth.login` 是一个任务，因为它需要等待用户在浏览器中完成操作。它返回任务句柄，客户端通过 `task.events` 跟进：
+
+| 事件 | 数据 |
+|---|---|
+| `auth.url` | `{ "url", "redirect_uri" }` —— 打开此 URL，或让 `open_browser` 处理 |
+| `auth.browser_error` | `{ "error" }`，浏览器无法打开时 |
+| `auth.stage` | `{ "stage" }` —— Xbox Live、XSTS、Minecraft 登录或档案 |
+| `task.completed` | `{ "result": { "account": { "id", "name" }, "storage_warning" } }` |
+
+通过 RPC 时 `open_browser` 默认为 `false`，因此无图形界面的守护进程不会尝试启动 GUI。可以打开浏览器的客户端可传入 `true`。
+
+Token 永远不会通过 RPC 返回。`auth.status` 和 `auth.accounts` 只暴露账号 ID、名称、时间戳和凭据后端。在线 `launch.start` 在内部续期会话，只把 Token 传给游戏进程。
+
+启动参数：
+
+| 字段 | 含义 |
+|---|---|
+| `offline_mode: true` | 需要 `username`；派生标准离线 UUID，并使用 `legacy`/`offline` 参数。 |
+| `offline_mode: false` | 续期所选账号，并使用 `msa`、档案 UUID 和名称、Minecraft 访问 Token、XUID 和 UMC 的 OAuth 客户端 ID 启动。`account_id` 选择账号；省略时使用默认账号。 |
+| `account_id` | 账号 UUID。只保存一个账号时可省略。 |
+
+如果刷新 Token 被拒绝，`launch.start` 会以 `-32007` 失败，删除已保存的凭据，并要求客户端重新运行 `auth.login`。如果没有已登录账号，也会返回同一错误码并提示登录。
+
 ## 共享数据契约
 
-`umc-api` 为 SDK 和 RPC 适配器定义与传输无关的 `InstanceConfig`、`LaunchRequest`、`MemoryConfig`、`GameProcess`、`TaskHandle` 和错误类别类型。内存值以 MiB 为单位。实例游戏路径相对于托管数据根目录。
+`umc-api` 为 SDK 和 RPC 适配器定义与传输无关的 `InstanceConfig`、`LaunchRequest`、`MemoryConfig`、`AuthStatus`、`AccountSummary`、`AuthRefreshResult`、`GameProcess`、`TaskHandle` 和错误类别类型。内存值以 MiB 为单位。实例游戏路径相对于托管数据根目录。
 
 ## 当前限制
 
 实例配置带有 `schema_version`。版本 0 文件在读取时迁移到版本 1，旧字节保留为 `instance.json.bak`。写入使用同步的临时文件和原子重命名。损坏的主文件会被隔离，并从有效备份恢复。如果没有备份，`instance.repair` 只有在版本元数据和安装记录一致时才能重建配置；游戏数据会保留。无法恢复的配置错误会由 `instance.list` 报告，而不是静默隐藏该目录。
 
-当前原版启动路径明确为离线模式；Microsoft 认证尚未实现。托管 Java 下载是可选的，使用 Mojang 运行时目录，并校验目录清单和每个运行时文件的 SHA-1 与大小。启动优先选择与版本 Mojang 组件匹配的兼容托管运行时，然后检查系统 Java。`java.detect` 会报告已安装但不兼容的 Java，便于客户端说明所需版本。原版安装器不支持加载器实例。删除会拒绝运行中的进程，并在无法验证进程状态时拒绝删除。CLI 启动会等待游戏退出；stdout/stderr 写入 `instances/<id>/logs/umc-console.log`，因此不会破坏 stdio RPC 流。
+原版启动路径同时支持显式离线模式和 Microsoft 认证的在线模式。在线启动会续期已保存的刷新 Token，依次经过 Xbox Live/XSTS/Minecraft 服务，并把会话传给游戏；加载器实例仍无法启动。托管 Java 下载是可选的，使用 Mojang 运行时目录，并校验目录清单和每个运行时文件的 SHA-1 与大小。启动优先选择与版本 Mojang 组件匹配的兼容托管运行时，然后检查系统 Java。`java.detect` 会报告已安装但不兼容的 Java，便于客户端说明所需版本。删除会拒绝运行中的进程，并在无法验证进程状态时拒绝删除。CLI 启动会等待游戏退出；stdout/stderr 写入 `instances/<id>/logs/umc-console.log`，因此不会破坏 stdio RPC 流。
 
 加载器适配器目前只提供版本发现和加载器专用安装预检。Fabric 计划使用 Fabric Meta 的启动器配置文件；Forge 和 NeoForge 计划标识各自的 Maven 安装器构件和校验和副文件。`loader.plan` 不会下载、执行安装器、修改实例，也不会让加载器实例可启动。自定义提供方代码可以由可信的 Rust 宿主注册；提供方不会被动态加载，守护进程提供方必须由守护进程宿主配置。CurseForge 和 Modrinth 内容 API 与加载器安装相互独立，不属于这些适配器。
 

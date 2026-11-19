@@ -1,7 +1,8 @@
 # Quickstart
 
 Go from a fresh Linux machine to a running vanilla Minecraft: Java Edition client in a few
-commands. UMC installs the game into an isolated instance and launches it in explicit offline mode.
+commands. UMC installs the game into an isolated instance and can launch it offline or with a
+Microsoft account.
 
 ::: tip Before you start
 
@@ -88,24 +89,33 @@ umc java detect 21
 umc java runtimes
 ```
 
-## 5. Launch offline
+## 5. Sign in and launch online
 
 ```sh
-umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 Steve --offline
+umc auth login
+umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 --online
 ```
 
-Replace `Steve` with a 1–16 character offline username. The CLI waits for the game to exit and
-writes stdout and stderr to `instances/<instance-id>/logs/umc-console.log`.
+`umc auth login` opens Microsoft's sign-in page once and stores a refresh token. Later online
+launches renew the session silently. The CLI waits for the game to exit and writes stdout and stderr
+to `instances/<instance-id>/logs/umc-console.log`.
 
-::: warning Offline mode only
+## 6. Launch offline for testing
 
-This release does not implement Microsoft authentication, so authenticated online play is not
-available. `--offline` is required and does not verify account ownership. Do not treat it as a
-Microsoft account login.
+```sh
+umc launch instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204 --offline Steve
+```
+
+Replace `Steve` with a 1–16 character offline username.
+
+::: warning Offline mode
+
+Offline mode does not verify account ownership and cannot join servers that require a Microsoft
+account. Use `--online` for authenticated play.
 
 :::
 
-## 6. Next steps
+## 7. Next steps
 
 - [User guide](/en/guide/user-guide) — overview of the CLI, data model, and workflow.
 - [CLI reference](/en/guide/cli) — every command, argument, and output convention.

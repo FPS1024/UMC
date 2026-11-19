@@ -37,6 +37,8 @@ md5 = "0.7"
 shell-words = "1"
 futures-util = "0.3"
 libc = "0.2"
+keyring = "4.2"
+fs2 = "0.4"
 umc-api = { path = "crates/umc-api" }
 umc-core = { path = "crates/umc-core" }
 umc-sdk = { path = "crates/umc-sdk" }

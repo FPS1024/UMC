@@ -215,8 +215,7 @@ execute loader installs or merge loader launch metadata.
   - Windows named pipe with an owner-only ACL and remote clients rejected.
   - No TCP listener.
 - RPC does not offer arbitrary shell execution.
-- Tokens are not stored because Microsoft authentication is not implemented; future token storage
-  belongs in OS credential storage, not instance JSON or logs.
+- Only the Microsoft refresh token is persisted, in the OS keyring or a `0600` fallback file. Microsoft, Xbox, XSTS, and Minecraft access tokens are never written to instance JSON or logs.
 
 ## Concurrency
 
@@ -227,8 +226,8 @@ execute loader installs or merge loader launch metadata.
 
 ## Known limitations
 
-- Microsoft authentication and online play are not implemented.
-- Loader install and launch are not implemented; only discovery and preflight plans exist.
+- Loader install and launch are not implemented; only discovery and preflight plans exist. Online
+  launch is vanilla-only.
 - Mod, modpack, and resource-pack management are not implemented.
 - Windows and macOS are not in the validated release target.
 - OS architecture and version rule conditions are not evaluated.

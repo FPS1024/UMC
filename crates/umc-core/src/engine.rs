@@ -873,6 +873,23 @@ pub(super) async fn set_private_dir(_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(unix)]
+pub(super) fn set_private_dir_blocking(path: &Path) -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700))
+        .map_err(|e| e.to_string())
+}
+
+#[cfg(windows)]
+pub(super) fn set_private_dir_blocking(path: &Path) -> Result<(), String> {
+    set_windows_acl(path, "D:P(A;OICI;FA;;;OW)")
+}
+
+#[cfg(not(any(unix, windows)))]
+pub(super) fn set_private_dir_blocking(_path: &Path) -> Result<(), String> {
+    Ok(())
+}
+
 #[cfg(windows)]
 fn set_windows_acl(path: &Path, sddl_text: &str) -> Result<(), String> {
     use std::os::windows::ffi::OsStrExt;
@@ -1717,10 +1734,102 @@ pub async fn remove_java_runtime(root: &Path, runtime_id: &str) -> Result<(), St
         .map_err(|e| e.to_string())
 }
 
+/// Identity used for a game launch. Online tokens stay in memory and are never
+/// included in process records or logs.
+pub(super) enum LaunchIdentity {
+    Offline {
+        username: String,
+    },
+    Online {
+        username: String,
+        uuid: String,
+        access_token: String,
+        xuid: Option<String>,
+        client_id: String,
+    },
+}
+
+struct ResolvedIdentity {
+    username: String,
+    uuid: String,
+    access_token: String,
+    user_type: &'static str,
+    xuid: String,
+    client_id: String,
+}
+
+fn valid_username(username: &str) -> bool {
+    !username.is_empty()
+        && username.len() <= 16
+        && username
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+}
+
+impl LaunchIdentity {
+    pub(super) fn offline(username: &str) -> Result<Self, String> {
+        if !valid_username(username) {
+            return Err(
+                "Offline username must be 1–16 ASCII letters, digits, or underscores".into(),
+            );
+        }
+        Ok(Self::Offline {
+            username: username.to_owned(),
+        })
+    }
+
+    fn resolve(self) -> Result<ResolvedIdentity, String> {
+        match self {
+            Self::Offline { username } => {
+                // Match Minecraft's standard offline profile UUID derivation
+                // without shelling out.
+                let mut offline_uuid =
+                    md5::compute(format!("OfflinePlayer:{username}").as_bytes()).0;
+                offline_uuid[6] = (offline_uuid[6] & 0x0f) | 0x30;
+                offline_uuid[8] = (offline_uuid[8] & 0x3f) | 0x80;
+                Ok(ResolvedIdentity {
+                    username,
+                    uuid: Uuid::from_bytes(offline_uuid).to_string(),
+                    access_token: "offline".into(),
+                    user_type: "legacy",
+                    xuid: String::new(),
+                    client_id: String::new(),
+                })
+            }
+            Self::Online {
+                username,
+                uuid,
+                access_token,
+                xuid,
+                client_id,
+            } => {
+                if !valid_username(&username) {
+                    return Err("The signed-in Minecraft profile has an invalid username".into());
+                }
+                let uuid = uuid.replace('-', "").to_ascii_lowercase();
+                if uuid.len() != 32 || !uuid.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+                    return Err("The signed-in Minecraft profile has an invalid UUID".into());
+                }
+                if access_token.is_empty() {
+                    return Err("The Minecraft access token is empty".into());
+                }
+                Ok(ResolvedIdentity {
+                    username,
+                    uuid,
+                    access_token,
+                    user_type: "msa",
+                    xuid: xuid.unwrap_or_default(),
+                    client_id,
+                })
+            }
+        }
+    }
+}
+
 pub async fn launch_vanilla(
     root: &Path,
     id: &str,
-    username: &str,
+    identity: LaunchIdentity,
     java_path: Option<&str>,
     extra_jvm_args: &[String],
     extra_game_args: &[String],
@@ -1728,14 +1837,7 @@ pub async fn launch_vanilla(
     resolution: Option<(u32, u32)>,
     fullscreen: bool,
 ) -> Result<GameProcess, String> {
-    if username.is_empty()
-        || username.len() > 16
-        || !username
-            .bytes()
-            .all(|c| c.is_ascii_alphanumeric() || c == b'_')
-    {
-        return Err("Offline username must be 1–16 ASCII letters, digits, or underscores".into());
-    }
+    let identity = identity.resolve()?;
     let cfg = read_config(root, id).await?;
     if cfg.loader.is_some() {
         return Err("This launcher currently supports vanilla instances only".into());
@@ -1874,14 +1976,15 @@ pub async fn launch_vanilla(
             .as_str()
             .ok_or("Missing Minecraft main class")?,
     );
-    // Match Minecraft's standard offline profile UUID derivation without shelling out.
-    let mut offline_uuid = md5::compute(format!("OfflinePlayer:{username}").as_bytes()).0;
-    offline_uuid[6] = (offline_uuid[6] & 0x0f) | 0x30;
-    offline_uuid[8] = (offline_uuid[8] & 0x3f) | 0x80;
-    let token_uuid = Uuid::from_bytes(offline_uuid).to_string();
+    let token_uuid = identity.uuid.clone();
+    let auth_session = if identity.access_token == "offline" {
+        "token:offline:00000000-0000-0000-0000-000000000000".to_owned()
+    } else {
+        format!("token:{}:{}", identity.access_token, identity.uuid)
+    };
     let mut game_args = vec![
         "--username".into(),
-        username.into(),
+        identity.username.clone(),
         "--version".into(),
         cfg.minecraft_version.clone(),
         "--gameDir".into(),
@@ -1893,9 +1996,9 @@ pub async fn launch_vanilla(
         "--uuid".into(),
         token_uuid.clone(),
         "--accessToken".into(),
-        "offline".into(),
+        identity.access_token.clone(),
         "--userType".into(),
-        "legacy".into(),
+        identity.user_type.into(),
         "--versionType".into(),
         "UMC".into(),
     ];
@@ -1927,7 +2030,7 @@ pub async fn launch_vanilla(
         }
         for arg in &mut game_args {
             *arg = arg
-                .replace("${auth_player_name}", username)
+                .replace("${auth_player_name}", &identity.username)
                 .replace("${version_name}", &cfg.minecraft_version)
                 .replace("${game_directory}", &game_dir.to_string_lossy())
                 .replace("${assets_root}", &assets.to_string_lossy())
@@ -1943,15 +2046,12 @@ pub async fn launch_vanilla(
                     state["assets_index"].as_str().unwrap_or(""),
                 )
                 .replace("${auth_uuid}", &token_uuid)
-                .replace("${auth_access_token}", "offline")
-                .replace(
-                    "${auth_session}",
-                    "token:offline:00000000-0000-0000-0000-000000000000",
-                )
-                .replace("${auth_xuid}", "")
-                .replace("${clientid}", "")
+                .replace("${auth_access_token}", &identity.access_token)
+                .replace("${auth_session}", &auth_session)
+                .replace("${auth_xuid}", &identity.xuid)
+                .replace("${clientid}", &identity.client_id)
                 .replace("${user_properties}", "{}")
-                .replace("${user_type}", "legacy")
+                .replace("${user_type}", identity.user_type)
                 .replace("${version_type}", "UMC")
                 .replace(
                     "${resolution_width}",
@@ -1975,7 +2075,7 @@ pub async fn launch_vanilla(
             .map_err(|e| format!("Invalid legacy game arguments: {e}"))?;
         for arg in &mut game_args {
             *arg = arg
-                .replace("${auth_player_name}", username)
+                .replace("${auth_player_name}", &identity.username)
                 .replace("${version_name}", &cfg.minecraft_version)
                 .replace("${game_directory}", &game_dir.to_string_lossy())
                 .replace("${assets_root}", &assets.to_string_lossy())
@@ -1991,15 +2091,12 @@ pub async fn launch_vanilla(
                     state["assets_index"].as_str().unwrap_or(""),
                 )
                 .replace("${auth_uuid}", &token_uuid)
-                .replace("${auth_access_token}", "offline")
-                .replace(
-                    "${auth_session}",
-                    "token:offline:00000000-0000-0000-0000-000000000000",
-                )
-                .replace("${auth_xuid}", "")
-                .replace("${clientid}", "")
+                .replace("${auth_access_token}", &identity.access_token)
+                .replace("${auth_session}", &auth_session)
+                .replace("${auth_xuid}", &identity.xuid)
+                .replace("${clientid}", &identity.client_id)
                 .replace("${user_properties}", "{}")
-                .replace("${user_type}", "legacy")
+                .replace("${user_type}", identity.user_type)
                 .replace("${version_type}", "UMC");
         }
     }
@@ -2386,5 +2483,33 @@ mod tests {
         cfg = sample_config("safe");
         cfg.memory.maximum_mib = 512;
         assert!(parse_config(&serde_json::to_vec(&cfg).unwrap(), "safe").is_err());
+    }
+
+    #[test]
+    fn online_identity_uses_profile_values() {
+        let identity = LaunchIdentity::Online {
+            username: "Player_1".into(),
+            uuid: "069A79F4-44E9-4726-A5BE-FCA90E38AAF5".into(),
+            access_token: "mc-token".into(),
+            xuid: Some("2535400000000000".into()),
+            client_id: "client-id".into(),
+        }
+        .resolve()
+        .unwrap();
+        assert_eq!(identity.username, "Player_1");
+        assert_eq!(identity.uuid, "069a79f444e94726a5befca90e38aaf5");
+        assert_eq!(identity.access_token, "mc-token");
+        assert_eq!(identity.user_type, "msa");
+        assert_eq!(identity.xuid, "2535400000000000");
+        assert_eq!(identity.client_id, "client-id");
+    }
+
+    #[test]
+    fn offline_identity_derives_standard_uuid() {
+        let identity = LaunchIdentity::offline("Steve").unwrap().resolve().unwrap();
+        assert_eq!(identity.uuid, "5627dd98-e6be-3c21-b8a8-e92344183641");
+        assert_eq!(identity.access_token, "offline");
+        assert_eq!(identity.user_type, "legacy");
+        assert!(LaunchIdentity::offline("bad name").is_err());
     }
 }

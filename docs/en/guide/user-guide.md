@@ -5,9 +5,9 @@ workflow with the `umc` CLI, what UMC writes to disk, and how to recover when so
 
 ::: tip Scope of this release
 
-The current Linux x86_64 release supports **vanilla installation** and **explicit offline launch**.
-Microsoft authentication, authenticated online play, loader installation, and modpack management are
-not implemented yet.
+The current Linux x86_64 release supports **vanilla installation**, **offline launch**, and
+**Microsoft sign-in for vanilla online launch**. Loader installation, loader online launch, and
+modpack management are not implemented yet.
 
 :::
 
@@ -18,6 +18,8 @@ not implemented yet.
 - Download the client, libraries, assets, natives, and logging configuration with SHA-1 and size
   verification.
 - Detect compatible Java, or provision a Mojang-managed runtime for a specific Minecraft version.
+- Sign in with a Microsoft account, store a refresh token securely, and launch authenticating
+  online sessions without reopening the browser.
 - Launch an installed instance in offline mode and supervise the game process.
 - Inspect, cancel, and recover install tasks; list and stop game processes.
 - Repair instance configuration from a backup or a verified install record.
@@ -27,9 +29,8 @@ not implemented yet.
 
 | Area | Current state |
 |---|---|
-| Microsoft account login | Not implemented |
-| Authenticated online play | Not implemented |
 | Fabric / Forge / NeoForge install and launch | Version discovery and preflight plans only |
+| Online launch through loader adapters | Not implemented; online launch is vanilla-only |
 | Mods, modpacks, resource packs | Not implemented |
 | Windows and macOS | Planned ports; not part of the current release target |
 | In-game console input through UMC | Not available; game stdin is closed |
@@ -62,8 +63,14 @@ umc java detect 21
 # or provision Mojang's runtime
 umc java install 1.21.1
 
-# 5. Launch offline
-umc launch <instance-id> Steve --offline
+# 5. Sign in with a Microsoft account
+umc auth login
+
+# 6. Launch online
+umc launch <instance-id> --online
+
+# Or launch offline for local testing
+umc launch <instance-id> --offline Steve
 ```
 
 The install commands above wait for completion and print progress on stderr. Task commands such as
@@ -82,13 +89,93 @@ The install commands above wait for completion and print progress on stderr. Tas
 | Detect Java | `umc java detect [minimum-major]` | [Java runtimes](./java) |
 | List managed runtimes | `umc java runtimes` | [Java runtimes](./java) |
 | Install a Mojang runtime | `umc java install <minecraft-version>` | [Java runtimes](./java) |
-| Launch offline | `umc launch <id> <username> --offline` | [Launching and processes](./launching) |
+| Sign in with Microsoft | `umc auth login` | See [Microsoft account](#microsoft-account) |
+| Account status | `umc auth status`, `umc auth accounts` | See [Microsoft account](#microsoft-account) |
+| Renew a session | `umc auth refresh [--account <id>]` | See [Microsoft account](#microsoft-account) |
+| Sign out | `umc auth logout [--account <id>]` | Deletes the stored refresh token |
+| Launch online | `umc launch <id> --online [--account <id>]` | [Launching and processes](./launching) |
+| Launch offline | `umc launch <id> --offline <username>` | [Launching and processes](./launching) |
 | Inspect processes | `umc process list`, `umc process status <id>` | [Launching and processes](./launching) |
 | Stop a process | `umc process stop <id>` | [Launching and processes](./launching) |
 | Inspect tasks | `umc task get <id>`, `umc task events <id>` | Requires `umcd`; [Tasks and the local daemon](./tasks-and-daemon) |
 | Cancel a task | `umc task cancel <id>` | Requires `umcd` |
 | Start the daemon | `umcd` | [Tasks and the local daemon](./tasks-and-daemon) |
 | Start the stdio RPC adapter | `umc rpc --stdio` | [Developer integration](../development/) |
+
+## Microsoft account
+
+### Sign in
+
+```sh
+umc auth login
+umc auth login --no-browser
+umc auth login --redirect-uri http://localhost
+```
+
+UMC opens Microsoft's authorization page in your browser and listens on a temporary loopback port
+for the callback. The authorization code is bound to the request with PKCE and a random `state`
+value. UMC never receives your Microsoft password.
+
+After Microsoft sign-in, UMC exchanges the code for Microsoft tokens, authenticates with Xbox Live
+and XSTS, logs in to Minecraft services, and fetches the Minecraft profile. Only the refresh token
+is saved.
+
+### Inspect saved accounts
+
+```sh
+umc auth status
+umc auth accounts
+```
+
+`auth status` reports whether an account is signed in, the default account, the credential backend
+(`keyring` or `file`), and any storage warning. Account IDs are Minecraft UUIDs.
+
+### Renew without a browser
+
+Online launch renews the session automatically:
+
+```sh
+umc launch <instance-id> --online
+```
+
+You can also renew explicitly:
+
+```sh
+umc auth refresh
+umc auth refresh --account <account-id>
+```
+
+A refresh uses the stored refresh token to obtain new Microsoft, Xbox, XSTS, and Minecraft tokens.
+No browser is opened. If Microsoft rejects the refresh token (for example after a password change
+or long inactivity), the saved credential is removed and you must run `umc auth login` again.
+
+### Multiple accounts
+
+The first account becomes the default. With more than one saved account, pass the account ID:
+
+```sh
+umc launch <instance-id> --online --account <account-id>
+```
+
+### Sign out
+
+```sh
+umc auth logout
+umc auth logout --account <account-id>
+```
+
+Sign-out deletes the stored refresh token and account metadata from this machine. It does not
+change your Microsoft account or Minecraft profile.
+
+### Where credentials are stored
+
+- **OS keyring** — GNOME Keyring/KWallet (Linux), macOS Keychain, or Windows Credential Manager.
+- **File fallback** — `UMC_DATA_DIR/credentials/<account-id>.json` with `0600` permissions when no
+  keyring is available.
+
+Set `UMC_CREDENTIAL_STORE=file` to use the file backend explicitly. When the variable is unset, UMC
+prefers the OS keyring and falls back automatically if it is unavailable. Microsoft access tokens,
+Xbox/XSTS tokens, and Minecraft access tokens are never written to disk.
 
 ## Two ways to run long operations
 
