@@ -123,8 +123,8 @@ UMC also ships independently deployable services under [`services/`](services/):
 | Service | Status | Purpose |
 |---|---|---|
 | [Auth server](services/auth/) | Initial implementation | Self-hosted Go/PostgreSQL registration and Yggdrasil-compatible authentication for Minecraft communities |
+| Java Edition server | Planned | Dockerized Minecraft: Java Edition server |
 | Mirror | Planned | Download mirror for versions, libraries, assets, and Java runtimes |
-| Skin designer | Planned | Web skin editor and texture host |
 
 Each service has its own Docker image and is optional; `umc` and `umcd` do not require them.
 

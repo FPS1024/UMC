@@ -85,8 +85,8 @@ const englishSidebar = {
       items: [
         { text: 'Overview', link: '/en/services/' },
         { text: 'UMC Auth', link: '/en/services/auth' },
+        { text: 'Java game server', link: '/en/services/java-server' },
         { text: 'Mirror', link: '/en/services/mirror' },
-        { text: 'Skin designer', link: '/en/services/skindesigner' },
       ],
     },
   ],
@@ -160,8 +160,8 @@ const chineseSidebar = {
       items: [
         { text: '概览', link: '/zh/services/' },
         { text: 'UMC Auth', link: '/zh/services/auth' },
+        { text: 'Java 版服务器', link: '/zh/services/java-server' },
         { text: '镜像站', link: '/zh/services/mirror' },
-        { text: '皮肤设计器', link: '/zh/services/skindesigner' },
       ],
     },
   ],

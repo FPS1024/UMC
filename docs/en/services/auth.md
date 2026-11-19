@@ -289,7 +289,7 @@ signing key.
 - No skin upload or texture signing yet; profiles expose an empty `properties` array.
 - Admin settings are environment variables and require a restart.
 - No two-factor authentication for administrators.
-- The mirror and skin designer services are planned, not implemented.
+- The mirror is planned.
 
 ## Development
 
