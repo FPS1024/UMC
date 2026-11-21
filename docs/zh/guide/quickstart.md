@@ -63,7 +63,7 @@ umc instance create Survival 1.21.1
 umc instance install instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204
 ```
 
-CLI 会等待安装任务完成，并把进度输出到 stderr。客户端 JAR、库、资源和日志配置在接受前都会经过 SHA-1 与大小校验。重复执行该命令可以修复缺失或损坏的文件。
+CLI 会等待安装任务完成，并把进度输出到 stderr。客户端 JAR、库、资源和日志配置会在上游提供相应元数据时按 SHA-1 与文件大小校验。重复执行该命令可以修复缺失或损坏的文件。
 
 如果在后台使用守护进程，可以用返回的任务 ID 跟踪进度：
 

@@ -50,9 +50,9 @@ One engine is available through four surfaces:
 | | Capability | Details |
 |---|---|---|
 | 🦀 | **Rust-native core** | One `umc-core` implementation powers the SDK, CLI, stdio adapter, and daemon. |
-| 🔒 | **Integrity checked** | Client JARs, libraries, assets, logs, and runtimes are verified by SHA-1 and size. |
+| 🔒 | **Integrity checked** | Downloaded client JARs, libraries, assets, logging configuration, and managed runtimes are checked against upstream SHA-1 and size metadata where provided. |
 | ⚙️ | **Persistent tasks** | Install operations expose sequenced progress events, cancellation, retries, timeouts, and restart recovery. |
-| 🖥️ | **Local-first daemon** | Local-only IPC with owner-only permissions. No TCP listener, no account service, no telemetry. |
+| 🖥️ | **Local-first daemon** | Local-only IPC with owner-only permissions. The launcher Core has no TCP listener, hosted account service, or telemetry. |
 | ☕ | **Managed Java** | Detect compatible system Java or provision a verified Mojang runtime for a specific version. |
 | 📦 | **Isolated instances** | Each instance has its own config, game directory, logs, and verified install record. |
 | 🧩 | **Loader-ready adapters** | Fabric, Forge, and NeoForge version discovery and install preflight plans. |
@@ -80,7 +80,7 @@ instance data, errors, and process handling stay consistent.
 | Persistent tasks, local daemon, CLI, Rust SDK, JSON-RPC | ✅ Available |
 | Fabric / Forge / NeoForge version discovery and preflight | ✅ Available |
 | Microsoft account sign-in and vanilla online launch | ✅ Available |
-| Loader installation and loader online launch | 🚧 In development |
+| Loader installation and loader online launch | ⏸️ Paused after version discovery and install preflight |
 | Mods, modpacks, and resource packs | 🚧 Planned |
 | Windows and macOS ports | 🚧 Planned |
 
@@ -126,7 +126,10 @@ UMC also ships independently deployable services under [`services/`](services/):
 | Java Edition server | Planned | Dockerized Minecraft: Java Edition server |
 | Mirror | Planned | Download mirror for versions, libraries, assets, and Java runtimes |
 
-Each service has its own Docker image and is optional; `umc` and `umcd` do not require them.
+The Auth service currently has a Docker Compose deployment. The Java Edition server and Mirror are
+planned and are not packaged yet. All companion services are optional; `umc` and `umcd` do not
+require them. UMC Auth is a community-operated Yggdrasil-compatible account service, separate from
+the launcher's Microsoft sign-in and ownership checks.
 
 ## Documentation
 

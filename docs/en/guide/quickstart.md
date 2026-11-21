@@ -63,7 +63,8 @@ umc instance install instance-8f14d9c0e2b34d0f9c3a7e51d6b8a204
 ```
 
 The CLI waits for the install task and prints progress on stderr. Client JARs, libraries, assets,
-and logging configuration are verified by SHA-1 and size before they are accepted. Re-running the
+and logging configuration are checked against upstream SHA-1 and size metadata where provided before
+they are accepted. Re-running the
 command repairs missing or corrupt files.
 
 If you use the daemon in the background, follow progress with the returned task ID instead:

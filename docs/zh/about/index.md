@@ -10,8 +10,8 @@ UMC（Universal Minecraft Core）是一个独立的开源 Minecraft: Java Editio
 
 大多数启动器把界面、账号处理、下载和启动逻辑混在同一个应用里，导致难以复用、测试和审计。UMC 把引擎和界面分开：
 
-- **一个引擎，三种接入方式。** CLI、Rust SDK 和本地 JSON-RPC 守护进程都委托给同一个 `umc-core` 实现，行为和状态保持一致。
-- **本地优先。** 实例、下载、任务、进程和日志都保存在你控制的数据目录下。UMC 不运营账号服务、遥测端点或云同步。
+- **一个引擎，四种接口。** CLI、Rust SDK、stdio JSON-RPC 和本地 JSON-RPC 守护进程都委托给同一个 `umc-core` 实现，行为和状态保持一致。
+- **本地优先。** 实例、下载、任务、进程和日志都保存在你控制的数据目录下。启动器 Core 不运营托管账号服务、遥测端点或云同步。独立可选的 UMC Auth 由社区运营，提供 Yggdrasil 兼容账号。
 - **边界明确。** 下载经过校验，路径限制在数据目录内，Token 会被脱敏且不会通过 RPC 返回，守护进程只监听本地 IPC。
 
 ## UMC 能做什么
@@ -29,7 +29,7 @@ UMC（Universal Minecraft Core）是一个独立的开源 Minecraft: Java Editio
 1. **无界面核心。** 安装、认证和启动都不需要窗口。
 2. **单一实现。** 前端不重复实现启动器逻辑。
 3. **本地优先的隐私。** 玩家数据和凭据保留在本机；没有遥测。
-4. **可验证的下载。** 每个受管理的游戏文件都对照 Mojang 元数据校验。
+4. **可验证的下载。** 下载文件会在上游提供对应校验元数据时进行完整性校验。
 5. **保守的安全边界。** OAuth Token 不进入实例配置或日志，本地控制面限制为当前用户。
 
 ## 项目状态
@@ -42,9 +42,9 @@ UMC（Universal Minecraft Core）是一个独立的开源 Minecraft: Java Editio
 - Mojang 托管 Java 运行时和进程监管
 - 持久化任务、本地守护进程、Rust SDK 和 JSON-RPC
 
-开发中：
+已暂停或规划中：
 
-- Fabric、Forge 和 NeoForge 安装与启动
+- Fabric、Forge 和 NeoForge 安装与启动（已在版本发现和安装预检后暂停）
 - 通过加载器适配器在线启动
 - 模组、整合包和资源包管理
 - Windows 和 macOS 验证

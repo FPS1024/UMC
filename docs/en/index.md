@@ -25,7 +25,7 @@ features:
       src: /icons/shield.svg
       alt: Integrity
     title: Integrity checked
-    details: Every client, library, asset, log config, and runtime file is verified by SHA-1 and size before it is used. Failed files are retried, never trusted.
+    details: Downloaded client, library, asset, logging configuration, and runtime files are checked against upstream SHA-1 and size metadata where provided. Failed files are retried.
   - icon:
       src: /icons/tasks.svg
       alt: Tasks
@@ -35,7 +35,7 @@ features:
       src: /icons/lock.svg
       alt: Local
     title: Local-first by default
-    details: The daemon speaks JSON-RPC over a private Unix socket or named pipe. There is no TCP listener, no account service, and no telemetry.
+    details: The daemon speaks JSON-RPC over a private Unix socket or named pipe. The launcher Core has no TCP listener, hosted account service, or telemetry. An optional community-operated Yggdrasil Auth service is maintained separately.
   - icon:
       src: /icons/java.svg
       alt: Java

@@ -3,8 +3,9 @@
 UMC ships a small set of independently deployable companion services. None of them are required to
 install or launch Minecraft; communities and launcher developers can run only the pieces they need.
 
-Each service is packaged as its own Docker image and can be placed next to the launcher, behind the
-same HTTPS reverse proxy, or on a separate host.
+UMC Auth currently has a Docker Compose deployment and can run next to the launcher, behind an HTTPS
+reverse proxy, or on a separate host. The Java Edition server and Mirror are planned and are not
+packaged yet.
 
 | Service | Status | Purpose |
 |---|---|---|
@@ -15,7 +16,7 @@ same HTTPS reverse proxy, or on a separate host.
 ## Design principles
 
 - **Optional by default.** A vanilla UMC installation never contacts these services.
-- **Independent deployment.** Each service has its own Docker image, configuration, and data store.
+- **Independent deployment.** Implemented services have their own deployment configuration and data store.
 - **HTTPS first.** Public services are expected to run behind a TLS-terminating reverse proxy.
 - **Community-owned.** Accounts, downloads, and textures stay under the operator's control.
 - **Small surface area.** Services do one job and expose a documented API rather than a large

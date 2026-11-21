@@ -7,7 +7,7 @@ workflow with the `umc` CLI, what UMC writes to disk, and how to recover when so
 
 The current Linux x86_64 release supports **vanilla installation**, **offline launch**, and
 **Microsoft sign-in for vanilla online launch**. Loader installation, loader online launch, and
-modpack management are not implemented yet.
+modpack management are not implemented yet. Loader work is paused after version discovery and install preflight.
 
 :::
 
@@ -15,8 +15,8 @@ modpack management are not implemented yet.
 
 - Discover official Minecraft Java Edition versions from Mojang metadata.
 - Create isolated instances with their own game directory and `instance.json`.
-- Download the client, libraries, assets, natives, and logging configuration with SHA-1 and size
-  verification.
+- Download the client, libraries, assets, natives, and logging configuration, checking against
+  upstream SHA-1 and size metadata where provided.
 - Detect compatible Java, or provision a Mojang-managed runtime for a specific Minecraft version.
 - Sign in with a Microsoft account, store a refresh token securely, and launch authenticating
   online sessions without reopening the browser.
@@ -29,7 +29,7 @@ modpack management are not implemented yet.
 
 | Area | Current state |
 |---|---|
-| Fabric / Forge / NeoForge install and launch | Version discovery and preflight plans only |
+| Fabric / Forge / NeoForge install and launch | Paused after version discovery and install preflight; installation and launch are not implemented |
 | Online launch through loader adapters | Not implemented; online launch is vanilla-only |
 | Mods, modpacks, resource packs | Not implemented |
 | Windows and macOS | Planned ports; not part of the current release target |

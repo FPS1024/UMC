@@ -13,7 +13,10 @@ Terminal ─────── CLI ───────┘
 
 - `umc-core` is the only implementation of launcher behavior.
 - The SDK, CLI, stdio adapter, and daemon are adapters over Core.
-- UMC does not bundle Minecraft, provide accounts, or run a hosted service.
+- UMC does not bundle Minecraft or operate a hosted account service for the launcher. Microsoft
+  sign-in is implemented locally in the launcher Core. The separate optional UMC Auth service is
+  community-operated and provides Yggdrasil-compatible accounts; it does not authenticate Microsoft
+  accounts or verify Minecraft ownership.
 - UMC does not expose arbitrary shell execution.
 
 ## Workspace
@@ -226,8 +229,8 @@ execute loader installs or merge loader launch metadata.
 
 ## Known limitations
 
-- Loader install and launch are not implemented; only discovery and preflight plans exist. Online
-  launch is vanilla-only.
+- Loader installation and launch are paused after version discovery and install preflight; they are
+  not implemented. Online launch is vanilla-only.
 - Mod, modpack, and resource-pack management are not implemented.
 - Windows and macOS are not in the validated release target.
 - OS architecture and version rule conditions are not evaluated.
@@ -238,6 +241,7 @@ execute loader installs or merge loader launch metadata.
 
 ## Future modules
 
-Planned work follows the release sequence: authentication, loader execution and version merging, mod
-distribution, platform ports, and a more complete public API. Interfaces should be introduced where
-a real alternate implementation is needed, not preemptively across every function.
+Microsoft sign-in and vanilla online launch are implemented. Loader execution and version merging
+are paused after discovery and preflight. Planned work includes mod distribution, platform ports,
+and a more complete public API. Interfaces should be introduced where a real alternate
+implementation is needed, not preemptively across every function.

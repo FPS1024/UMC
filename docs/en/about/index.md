@@ -11,10 +11,11 @@ Most launchers combine the interface, account handling, downloads, and launch lo
 application. That makes the launcher hard to reuse, test, and audit. UMC separates the engine from
 the interface:
 
-- **One engine, three surfaces.** The CLI, Rust SDK, and local JSON-RPC daemon all delegate to the
+- **One engine, four interfaces.** The CLI, Rust SDK, stdio JSON-RPC, and local JSON-RPC daemon all delegate to the
   same `umc-core` implementation, so behavior and state stay consistent.
 - **Local-first.** Instances, downloads, tasks, processes, and logs live beneath a data directory
-  you control. UMC runs no account service, telemetry endpoint, or cloud sync.
+  you control. The launcher Core runs no hosted account service, telemetry endpoint, or cloud sync.
+  The separate optional UMC Auth service is community-operated and uses Yggdrasil-compatible accounts.
 - **Explicit boundaries.** Downloads are verified, paths are confined to the data directory,
   tokens are redacted and never returned over RPC, and the daemon listens only on local IPC.
 
@@ -33,7 +34,7 @@ the interface:
 1. **Headless core.** No window is required to install, authenticate, or launch.
 2. **One implementation.** Frontends do not reimplement launcher logic.
 3. **Local-first privacy.** Player data and credentials stay on the machine; telemetry is absent.
-4. **Verifiable downloads.** Every managed game file is checked against Mojang metadata.
+4. **Verifiable downloads.** Downloaded files are checked against upstream integrity metadata where available.
 5. **Conservative security.** OAuth tokens never enter instance configuration or logs, and local
    control surfaces are restricted to the current user.
 
@@ -47,9 +48,9 @@ Available now:
 - Managed Java runtimes and process supervision
 - Persistent tasks, local daemon, Rust SDK, and JSON-RPC
 
-In development:
+Paused or planned:
 
-- Fabric, Forge, and NeoForge installation and launch
+- Fabric, Forge, and NeoForge installation and launch (paused after version discovery and install preflight)
 - Online launch through loader adapters
 - Mod, modpack, and resource-pack management
 - Windows and macOS validation

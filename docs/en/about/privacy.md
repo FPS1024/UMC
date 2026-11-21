@@ -1,12 +1,12 @@
 # Privacy Policy
 
-_Last updated: November 19, 2026_
+_Last updated: November 21, 2026_
 
-This Privacy Policy explains what UMC (Universal Minecraft Core) collects, sends, and stores. It applies to the UMC Core library, command-line tools, daemon, SDK, loader adapters, documentation, and official builds. It does not cover third-party services such as Microsoft, Xbox, Minecraft, mod platforms, or the servers you join; those services have their own policies.
+This Privacy Policy explains what UMC (Universal Minecraft Core) collects, sends, and stores. It applies to the UMC Core library, command-line tools, daemon, SDK, loader adapters, documentation, and official builds. It does not cover the separately deployed UMC Auth service or third-party services such as Microsoft, Xbox, Minecraft, mod platforms, or the servers you join; those operators have their own policies.
 
 ## Summary
 
-- UMC does not operate a user account service, telemetry endpoint, analytics pipeline, advertising system, crash-reporting service, cloud sync, or remote management service.
+- The launcher Core does not operate a hosted player account service, telemetry endpoint, analytics pipeline, advertising system, crash-reporting service, cloud sync, or remote management service. UMC Auth is a separate, optional, community-operated Yggdrasil-compatible account service; its operator controls its data handling and privacy policy.
 - UMC stores game files, instances, runtimes, task state, and logs locally on your device.
 - Microsoft sign-in happens on Microsoft's pages. UMC never receives your Microsoft password.
 - The current version stores only the Microsoft refresh token, plus non-secret account metadata. Microsoft, Xbox, XSTS, and Minecraft access tokens are held in process memory and are not persisted.
@@ -90,7 +90,7 @@ Tokens are not written to logs. The token types used by UMC redact their content
 
 - No telemetry, analytics, usage statistics, or advertising identifiers.
 - No crash reporting or automatic upload of logs.
-- No cloud sync, remote backup, or account service operated by UMC.
+- No cloud sync, remote backup, or hosted account service operated by the launcher Core. UMC Auth is a separate optional service deployed and operated by communities.
 - No selling or sharing of personal data.
 - No background requests beyond the installation, version, loader, Java, and sign-in operations you initiate.
 

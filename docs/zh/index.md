@@ -25,7 +25,7 @@ features:
       src: /icons/shield.svg
       alt: 完整性
     title: 完整性校验
-    details: 客户端、库、资源、日志配置和运行时文件都会校验 SHA-1 与大小；失败的文件会重试，不会直接信任。
+    details: 下载的客户端、库、资源、日志配置和运行时文件会在上游提供相应元数据时按 SHA-1 与大小校验；失败的文件会重试。
   - icon:
       src: /icons/tasks.svg
       alt: 任务
@@ -35,7 +35,7 @@ features:
       src: /icons/lock.svg
       alt: 本地优先
     title: 本地优先
-    details: 守护进程通过私有 Unix Socket 或命名管道提供 JSON-RPC。没有 TCP 监听、没有账号服务，也没有遥测。
+    details: 守护进程通过私有 Unix Socket 或命名管道提供 JSON-RPC。启动器 Core 不监听 TCP、不提供托管账号服务或遥测；可选的 Yggdrasil UMC Auth 由社区独立部署和运营。
   - icon:
       src: /icons/java.svg
       alt: Java
@@ -45,5 +45,5 @@ features:
       src: /icons/puzzle.svg
       alt: 加载器
     title: 加载器适配器
-    details: Fabric、Forge 和 NeoForge 适配器可以查询版本并生成安装预检计划；执行安装与启动是下一阶段目标。
+    details: Fabric、Forge 和 NeoForge 适配器可以查询版本并生成安装预检计划；加载器实现已在此阶段暂停。
 ---
