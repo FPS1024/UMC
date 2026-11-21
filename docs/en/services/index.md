@@ -3,15 +3,15 @@
 UMC ships a small set of independently deployable companion services. None of them are required to
 install or launch Minecraft; communities and launcher developers can run only the pieces they need.
 
-UMC Auth currently has a Docker Compose deployment and can run next to the launcher, behind an HTTPS
-reverse proxy, or on a separate host. The Java Edition server and Mirror are planned and are not
-packaged yet.
+UMC Auth and the initial UMC Mirror implementation have Docker Compose deployments. They can run
+next to the launcher, behind HTTPS, or on separate hosts. The Java Edition server is planned and is
+not packaged yet.
 
 | Service | Status | Purpose |
 |---|---|---|
 | [UMC Auth](./auth) | Initial implementation | Account registration and Yggdrasil-compatible authentication |
 | [Java Edition server](./java-server) | Planned | Dockerized Minecraft: Java Edition server |
-| [Mirror](./mirror) | Planned | Download mirror for versions, libraries, assets, and Java runtimes |
+| [Mirror](./mirror) | Initial implementation | HTTPS-only Go cache with SHA-1 verification for configured upstream objects |
 
 ## Design principles
 

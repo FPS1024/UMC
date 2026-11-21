@@ -274,7 +274,7 @@ docker compose start auth
 - 尚未实现皮肤上传和纹理签名，档案的 `properties` 为空。
 - 管理员设置仍是环境变量，修改后需要重启。
 - 管理员没有两步验证。
-- 镜像站仍处于计划阶段。
+- 镜像站已有首版 Compose 部署，但尚未接入 UMC Core。
 
 ## 开发
 

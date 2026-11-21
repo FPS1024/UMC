@@ -124,10 +124,10 @@ UMC also ships independently deployable services under [`services/`](services/):
 |---|---|---|
 | [Auth server](services/auth/) | Initial implementation | Self-hosted Go/PostgreSQL registration and Yggdrasil-compatible authentication for Minecraft communities |
 | Java Edition server | Planned | Dockerized Minecraft: Java Edition server |
-| Mirror | Planned | Download mirror for versions, libraries, assets, and Java runtimes |
+| Mirror | Initial implementation | HTTPS-only Go cache with SHA-1 verification for configured upstream objects |
 
-The Auth service currently has a Docker Compose deployment. The Java Edition server and Mirror are
-planned and are not packaged yet. All companion services are optional; `umc` and `umcd` do not
+The Auth and Mirror services currently have Docker Compose deployments. The Java Edition server is
+planned and is not packaged yet. All companion services are optional; `umc` and `umcd` do not
 require them. UMC Auth is a community-operated Yggdrasil-compatible account service, separate from
 the launcher's Microsoft sign-in and ownership checks.
 

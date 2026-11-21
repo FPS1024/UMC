@@ -289,7 +289,7 @@ signing key.
 - No skin upload or texture signing yet; profiles expose an empty `properties` array.
 - Admin settings are environment variables and require a restart.
 - No two-factor authentication for administrators.
-- The mirror is planned.
+- UMC Mirror has an initial Compose deployment but is not integrated with UMC Core yet.
 
 ## Development
 

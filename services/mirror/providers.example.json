@@ -1,0 +1,9 @@
+[
+  {"id": "mojang-meta", "base_url": "https://piston-meta.mojang.com"},
+  {"id": "mojang-data", "base_url": "https://piston-data.mojang.com"},
+  {"id": "minecraft-resources", "base_url": "https://resources.download.minecraft.net"},
+  {"id": "minecraft-downloads", "base_url": "https://downloads.minecraft.net"},
+  {"id": "minecraft-libraries", "base_url": "https://libraries.minecraft.net"},
+  {"id": "launcher-meta", "base_url": "https://launchermeta.mojang.com"},
+  {"id": "launcher", "base_url": "https://launcher.mojang.com"}
+]

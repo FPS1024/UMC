@@ -1,0 +1,45 @@
+services:
+  mirror:
+    build: .
+    restart: unless-stopped
+    environment:
+      PUBLIC_BASE_URL: https://${MIRROR_DOMAIN:?Set MIRROR_DOMAIN in .env}
+      CACHE_DIR: /data/cache
+      PROVIDERS_FILE: /etc/umc-mirror/providers.json
+      MAX_OBJECT_BYTES: ${MAX_OBJECT_BYTES:-536870912}
+      CACHE_MAX_BYTES: ${CACHE_MAX_BYTES:-10737418240}
+      MAX_CONCURRENT_DOWNLOADS: ${MAX_CONCURRENT_DOWNLOADS:-4}
+    expose:
+      - "8080"
+    volumes:
+      - mirror-cache:/data/cache
+      - ./providers.json:/etc/umc-mirror/providers.json:ro
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      mirror:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      MIRROR_DOMAIN: ${MIRROR_DOMAIN:?Set MIRROR_DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  mirror-cache:
+  caddy-data:
+  caddy-config:
