@@ -1,7 +1,6 @@
 import { defineConfig } from 'vitepress'
 
 const base = '/UMC/'
-const releases = 'https://github.com/FPS1024/UMC/releases/latest'
 const repo = 'https://github.com/FPS1024/UMC'
 
 const landingRedirectScript = `(function () {
@@ -26,7 +25,7 @@ const englishNav = [
     link: '/en/about/',
     activeMatch: '^/en/about/',
   },
-  { text: 'Download', link: releases },
+  { text: 'Install', link: '/en/guide/install' },
 ]
 
 const chineseNav = [
@@ -39,7 +38,7 @@ const chineseNav = [
     link: '/zh/about/',
     activeMatch: '^/zh/about/',
   },
-  { text: '下载', link: releases },
+  { text: '安装', link: '/zh/guide/install' },
 ]
 
 const englishSidebar = {

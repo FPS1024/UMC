@@ -6,8 +6,8 @@ hero:
   tagline: "A headless Minecraft: Java Edition launcher engine written in Rust. Install, verify, launch, and supervise the game from your own application — through a Rust SDK, a local JSON-RPC daemon, or the CLI."
   actions:
     - theme: brand
-      text: Download for Linux
-      link: https://github.com/FPS1024/UMC/releases/latest
+      text: Install UMC
+      link: /en/guide/install
     - theme: alt
       text: Read the docs
       link: /en/guide/quickstart

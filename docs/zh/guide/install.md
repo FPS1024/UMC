@@ -9,30 +9,9 @@ UMC 以 Linux x86_64 GNU 压缩包发布，包含两个可执行文件：
 - `umc` —— CLI 和 stdio JSON-RPC 适配器。
 - `umcd` —— 基于私有 Unix Socket 的本地 JSON-RPC 守护进程。
 
-## 下载发布包
+::: tip 当前可用性
 
-从 [GitHub 最新发布](https://github.com/FPS1024/UMC/releases/latest) 下载压缩包和 SHA-256 校验和，然后校验并解压：
-
-```sh
-VERSION=0.1.0
-BASE="https://github.com/FPS1024/UMC/releases/download/v${VERSION}"
-curl -LO "${BASE}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
-curl -LO "${BASE}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
-sha256sum -c "umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
-tar -xzf "umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
-install -m 755 "umc-v${VERSION}-linux-x86_64-gnu/umc" ~/.local/bin/umc
-install -m 755 "umc-v${VERSION}-linux-x86_64-gnu/umcd" ~/.local/bin/umcd
-```
-
-确认二进制可以运行：
-
-```sh
-umc help
-```
-
-::: warning 发布包尚未签名
-
-解压或运行发布包之前，请先校验发布的 SHA-256 校验和。当前版本尚未进行代码签名。
+当前没有已发布的预编译版本。请先按下面的“从源码构建”安装；发布新版本后，再使用预编译发布包。
 
 :::
 
@@ -51,6 +30,34 @@ cargo build --workspace --locked --release
 ```sh
 cargo install --path crates/umc-cli --locked
 ```
+
+确认二进制可以运行：
+
+```sh
+umc help
+```
+
+## 预编译发布包（发布后可用）
+
+有可用发布版本时，从 [GitHub Releases](https://github.com/FPS1024/UMC/releases) 下载压缩包和
+SHA-256 校验和，然后校验并解压：
+
+```sh
+VERSION=<最新版本>
+BASE="https://github.com/FPS1024/UMC/releases/download/v${VERSION}"
+curl -LO "${BASE}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
+curl -LO "${BASE}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
+sha256sum -c "umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
+tar -xzf "umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
+install -m 755 "umc-v${VERSION}-linux-x86_64-gnu/umc" ~/.local/bin/umc
+install -m 755 "umc-v${VERSION}-linux-x86_64-gnu/umcd" ~/.local/bin/umcd
+```
+
+::: warning 发布包尚未签名
+
+解压或运行发布包之前，请先校验发布的 SHA-256 校验和。当前版本尚未进行代码签名。
+
+:::
 
 ## 数据目录
 

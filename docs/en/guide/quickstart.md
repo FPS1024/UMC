@@ -8,28 +8,29 @@ Microsoft account.
 
 - **Platform:** Linux x86_64 is the current release target.
 - **Network:** version lookup, game files, and Java runtimes are downloaded over HTTPS.
-- **Toolchain:** Rust 1.89 or newer only if you build from source.
+- **Toolchain:** Rust 1.89 or newer. No prebuilt release is currently published, so build from
+  source using the first tab below.
 
 :::
 
 ## 1. Install UMC
 
-Use a published release or build from source.
+Build from source, or use a published release when one is available.
 
 ::: code-group
-
-```sh [Release]
-VERSION=0.1.0
-curl -LO "https://github.com/FPS1024/UMC/releases/download/v${VERSION}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
-curl -LO "https://github.com/FPS1024/UMC/releases/download/v${VERSION}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
-sha256sum -c "umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
-tar -xzf "umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
-```
 
 ```sh [From source]
 git clone https://github.com/FPS1024/UMC.git
 cd UMC
 cargo build --workspace --locked --release
+```
+
+```sh [Prebuilt release (when published)]
+VERSION=<latest-version>
+curl -LO "https://github.com/FPS1024/UMC/releases/download/v${VERSION}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
+curl -LO "https://github.com/FPS1024/UMC/releases/download/v${VERSION}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
+sha256sum -c "umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
+tar -xzf "umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
 ```
 
 :::

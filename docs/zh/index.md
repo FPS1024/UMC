@@ -6,8 +6,8 @@ hero:
   tagline: "用 Rust 编写的无界面 Minecraft: Java Edition 启动引擎。安装、校验、启动并托管游戏进程，可通过 Rust SDK、本地 JSON-RPC 守护进程或 CLI 接入。"
   actions:
     - theme: brand
-      text: 下载 Linux 版
-      link: https://github.com/FPS1024/UMC/releases/latest
+      text: 安装 UMC
+      link: /zh/guide/install
     - theme: alt
       text: 阅读文档
       link: /zh/guide/quickstart

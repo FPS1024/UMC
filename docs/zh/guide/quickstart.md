@@ -10,28 +10,28 @@ source: en/guide/quickstart.md
 
 - **平台：** 当前发布目标是 Linux x86_64。
 - **网络：** 版本查询、游戏文件和 Java 运行时通过 HTTPS 下载。
-- **工具链：** 只有从源码构建时才需要 Rust 1.89 或更新版本。
+- **工具链：** 需要 Rust 1.89 或更新版本。当前没有已发布的预编译版本，请使用下面的第一个标签从源码构建。
 
 :::
 
 ## 1. 安装 UMC
 
-使用已发布的版本，或者从源码构建。
+从源码构建，或在有发布版本时使用预编译发布包。
 
 ::: code-group
-
-```sh [发布包]
-VERSION=0.1.0
-curl -LO "https://github.com/FPS1024/UMC/releases/download/v${VERSION}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
-curl -LO "https://github.com/FPS1024/UMC/releases/download/v${VERSION}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
-sha256sum -c "umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
-tar -xzf "umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
-```
 
 ```sh [从源码]
 git clone https://github.com/FPS1024/UMC.git
 cd UMC
 cargo build --workspace --locked --release
+```
+
+```sh [预编译发布包（发布后可用）]
+VERSION=<最新版本>
+curl -LO "https://github.com/FPS1024/UMC/releases/download/v${VERSION}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
+curl -LO "https://github.com/FPS1024/UMC/releases/download/v${VERSION}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
+sha256sum -c "umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
+tar -xzf "umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
 ```
 
 :::

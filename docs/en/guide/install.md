@@ -1,36 +1,14 @@
 # Installation
 
-UMC ships as a Linux x86_64 GNU archive containing two executables:
+UMC is distributed as a Linux x86_64 GNU archive containing two executables:
 
 - `umc` — CLI and stdio JSON-RPC adapter.
 - `umcd` — local JSON-RPC daemon over a private Unix socket.
 
-## Download a release
+::: tip Current availability
 
-Download the archive and its SHA-256 checksum from the
-[latest GitHub release](https://github.com/FPS1024/UMC/releases/latest), then verify and unpack:
-
-```sh
-VERSION=0.1.0
-BASE="https://github.com/FPS1024/UMC/releases/download/v${VERSION}"
-curl -LO "${BASE}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
-curl -LO "${BASE}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
-sha256sum -c "umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
-tar -xzf "umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
-install -m 755 "umc-v${VERSION}-linux-x86_64-gnu/umc" ~/.local/bin/umc
-install -m 755 "umc-v${VERSION}-linux-x86_64-gnu/umcd" ~/.local/bin/umcd
-```
-
-Confirm the binaries run:
-
-```sh
-umc help
-```
-
-::: warning Releases are unsigned
-
-Verify the published SHA-256 checksum before unpacking or running a release. Releases are not
-code-signed yet.
+No prebuilt release is currently published. Build from source below. When a release is available,
+use the prebuilt release commands instead.
 
 :::
 
@@ -50,6 +28,35 @@ into the current Rust user's binary directory:
 ```sh
 cargo install --path crates/umc-cli --locked
 ```
+
+Confirm the binaries run:
+
+```sh
+umc help
+```
+
+## Prebuilt releases (when available)
+
+When a release is published, download the archive and its SHA-256 checksum from the
+[GitHub releases page](https://github.com/FPS1024/UMC/releases), then verify and unpack:
+
+```sh
+VERSION=<latest-version>
+BASE="https://github.com/FPS1024/UMC/releases/download/v${VERSION}"
+curl -LO "${BASE}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
+curl -LO "${BASE}/umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
+sha256sum -c "umc-v${VERSION}-linux-x86_64-gnu.tar.gz.sha256"
+tar -xzf "umc-v${VERSION}-linux-x86_64-gnu.tar.gz"
+install -m 755 "umc-v${VERSION}-linux-x86_64-gnu/umc" ~/.local/bin/umc
+install -m 755 "umc-v${VERSION}-linux-x86_64-gnu/umcd" ~/.local/bin/umcd
+```
+
+::: warning Releases are unsigned
+
+Verify the published SHA-256 checksum before unpacking or running a release. Releases are not
+code-signed yet.
+
+:::
 
 ## Data directory
 
