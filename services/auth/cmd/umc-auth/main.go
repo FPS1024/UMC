@@ -298,25 +298,9 @@ func envInt(name string, fallback int) (int, error) {
 
 func (a *App) routes() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /{$}", a.landing)
-	mux.HandleFunc("GET /register", a.registerPage)
-	mux.HandleFunc("POST /register", a.register)
-	mux.HandleFunc("GET /login", a.loginPage)
-	mux.HandleFunc("POST /login", a.login)
-	mux.HandleFunc("POST /logout", a.logout)
-	mux.HandleFunc("GET /dashboard", a.dashboard)
-	mux.HandleFunc("GET /verify-email", a.verifyEmail)
+	mux.HandleFunc("GET /{$}", a.apiRoot)
 	mux.HandleFunc("GET /healthz", a.health)
-	mux.Handle("GET /static/", staticHandler())
 	mux.HandleFunc("GET /api/register/challenge", a.registrationChallenge)
-
-	mux.HandleFunc("GET /admin", a.adminDashboard)
-	mux.HandleFunc("GET /admin/invites", a.adminInvites)
-	mux.HandleFunc("POST /admin/invites", a.adminCreateInvites)
-	mux.HandleFunc("POST /admin/invites/revoke", a.adminRevokeInvite)
-	mux.HandleFunc("GET /admin/users", a.adminUsers)
-	mux.HandleFunc("POST /admin/users/status", a.adminUserStatus)
-	mux.HandleFunc("GET /admin/audit", a.adminAudit)
 
 	mux.HandleFunc("GET /api/yggdrasil", a.metadata)
 	mux.HandleFunc("GET /api/yggdrasil/{$}", a.metadata)
@@ -361,6 +345,9 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("GET /api/v1/admin/mail", a.apiAdminMail)
 	mux.HandleFunc("POST /api/v1/admin/mail/{id}/retry", a.apiAdminRetryMail)
 	mux.HandleFunc("GET /api/v1/admin/stats", a.apiAdminStats)
+	mux.HandleFunc("GET /api/v1/admin/invites", a.apiAdminInvites)
+	mux.HandleFunc("POST /api/v1/admin/invites", a.apiAdminCreateInvites)
+	mux.HandleFunc("POST /api/v1/admin/invites/{id}/revoke", a.apiAdminRevokeInvite)
 
 	mux.HandleFunc("GET /api/v1/admin/servers", a.apiAdminServers)
 	mux.HandleFunc("POST /api/v1/admin/servers", a.apiAdminCreateServer)
@@ -369,6 +356,10 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("GET /api/v1/admin/servers/joins", a.apiAdminServerJoins)
 
 	mux.HandleFunc("GET /textures/{kind}/{uuid}/{hash}", a.texture)
+
+	// This host is JSON-only. Any unmatched page or API path gets a JSON 404
+	// instead of an HTML response.
+	mux.HandleFunc("/", a.apiNotFound)
 
 	return limitBody(a.securityHeaders(logRequests(mux)))
 }

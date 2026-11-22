@@ -174,7 +174,7 @@ onMounted(async () => {
       }
       turnstile.render(turnstileContainer.value, {
         sitekey: meta.value.turnstile_site_key,
-        theme: 'dark',
+        theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
         callback: (token) => {
           form.turnstileToken = token
         },
@@ -196,9 +196,8 @@ onMounted(async () => {
   <div class="auth-wrap auth-wrap-wide">
     <section class="auth-card">
       <div class="auth-heading">
-        <p class="eyebrow">New account</p>
-        <h1>Join the server</h1>
-        <p>Create one account for the website, launcher, and Minecraft server.</p>
+        <h1>Create account</h1>
+        <p>Enter your details to get started.</p>
       </div>
 
       <div v-if="config.error" class="alert alert-error">{{ config.error }}</div>
@@ -211,59 +210,61 @@ onMounted(async () => {
       </div>
 
       <form v-if="registrationOpen" class="form-stack" @submit.prevent="submit">
-        <div class="form-grid">
-          <label class="field">
-            <span>Username</span>
-            <input
-              v-model.trim="form.username"
-              autocomplete="username"
-              minlength="3"
-              maxlength="16"
-              pattern="[A-Za-z0-9_]+"
-              required
-              @input="error = ''"
-            />
-            <small>3–16 letters, digits, or underscores.</small>
-          </label>
-          <label class="field">
-            <span>Email</span>
-            <input
-              v-model.trim="form.email"
-              type="email"
-              autocomplete="email"
-              required
-              @input="error = ''"
-            />
-            <small v-if="meta?.email_verification === 'required'">
-              We will send a six-digit verification code.
-            </small>
-          </label>
-        </div>
+        <label class="field">
+          <span>Username</span>
+          <input
+            v-model.trim="form.username"
+            autocomplete="username"
+            placeholder="username"
+            minlength="3"
+            maxlength="16"
+            pattern="[A-Za-z0-9_]+"
+            required
+            @input="error = ''"
+          />
+          <small>3–16 letters, digits, or underscores.</small>
+        </label>
 
-        <div class="form-grid">
-          <label class="field">
-            <span>Password</span>
-            <input
-              v-model="form.password"
-              type="password"
-              autocomplete="new-password"
-              minlength="8"
-              maxlength="128"
-              required
-              @input="error = ''"
-            />
-          </label>
-          <label class="field">
-            <span>Confirm password</span>
-            <input
-              v-model="form.confirm"
-              type="password"
-              autocomplete="new-password"
-              required
-              @input="error = ''"
-            />
-          </label>
-        </div>
+        <label class="field">
+          <span>Email</span>
+          <input
+            v-model.trim="form.email"
+            type="email"
+            autocomplete="email"
+            placeholder="name@example.com"
+            required
+            @input="error = ''"
+          />
+          <small v-if="meta?.email_verification === 'required'">
+            We will send a six-digit verification code.
+          </small>
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input
+            v-model="form.password"
+            type="password"
+            autocomplete="new-password"
+            placeholder="At least 8 characters"
+            minlength="8"
+            maxlength="128"
+            required
+            @input="error = ''"
+          />
+        </label>
+
+        <label class="field">
+          <span>Confirm password</span>
+          <input
+            v-model="form.confirm"
+            type="password"
+            autocomplete="new-password"
+            placeholder="Re-enter your password"
+            required
+            @input="error = ''"
+          />
+        </label>
 
         <label v-if="showInvite" class="field">
           <span>Invite code</span>
@@ -296,19 +297,20 @@ onMounted(async () => {
           <small v-if="captchaError" class="field-error">{{ captchaError }}</small>
         </div>
 
-        <div v-if="error" class="alert alert-error">{{ error }}</div>
-        <div v-if="solving" class="alert alert-info">
-          <span class="spinner spinner-sm" aria-hidden="true"></span>
-          Solving the proof-of-work challenge…
-        </div>
-
         <button class="btn btn-primary btn-block" type="submit" :disabled="loading || solving">
           {{ loading ? 'Creating account…' : 'Create account' }}
         </button>
+
+        <div v-if="error" class="message error">{{ error }}</div>
+        <div v-if="solving" class="message">
+          <span class="spinner spinner-sm" aria-hidden="true"></span>
+          Solving the proof-of-work challenge…
+        </div>
       </form>
 
-      <div class="auth-links">
-        <RouterLink to="/login">Already have an account? Sign in</RouterLink>
+      <div class="auth-footer">
+        Already have an account?
+        <RouterLink to="/login">Sign in</RouterLink>
       </div>
     </section>
   </div>

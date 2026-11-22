@@ -6,6 +6,7 @@ import { isAdmin } from '../auth'
   <nav class="admin-nav" aria-label="Administration">
     <RouterLink v-if="isAdmin" to="/admin">Overview</RouterLink>
     <RouterLink to="/admin/users">Users</RouterLink>
+    <RouterLink v-if="isAdmin" to="/admin/invites">Invites</RouterLink>
     <RouterLink to="/admin/audit">Audit</RouterLink>
     <RouterLink v-if="isAdmin" to="/admin/servers">Servers</RouterLink>
     <RouterLink v-if="isAdmin" to="/admin/mail">Mail</RouterLink>

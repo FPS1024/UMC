@@ -1,14 +1,20 @@
 <script setup>
 import { computed, onMounted } from 'vue'
-import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { auth, isAdmin, isStaff, logout } from './auth'
 import { config, loadMeta } from './config'
 import ToastHost from './components/ToastHost.vue'
 
+const route = useRoute()
 const router = useRouter()
 
 const serverName = computed(() => config.meta?.server_name || 'Account service')
 const initial = computed(() => (auth.user?.username || '?').slice(0, 1).toUpperCase())
+const minimalLayout = computed(() =>
+  ['login', 'register', 'verify-email', 'forgot-password', 'reset-password'].includes(
+    route.name,
+  ),
+)
 
 async function signOut() {
   await logout()
@@ -23,7 +29,7 @@ onMounted(() => {
 <template>
   <a class="skip-link" href="#main">Skip to content</a>
 
-  <header class="site-header">
+  <header v-if="!minimalLayout" class="site-header">
     <div class="shell header-inner">
       <RouterLink to="/" class="brand" aria-label="UMC Auth home">
         <img src="/appicon.png" alt="" width="34" height="34" />
@@ -57,7 +63,7 @@ onMounted(() => {
     </div>
   </header>
 
-  <main id="main" class="shell main-content">
+  <main id="main" :class="minimalLayout ? 'auth-shell' : 'shell main-content'">
     <div v-if="!auth.ready" class="loading-panel">
       <span class="spinner" aria-hidden="true"></span>
       Loading your session…
@@ -65,7 +71,7 @@ onMounted(() => {
     <RouterView v-else />
   </main>
 
-  <footer class="site-footer">
+  <footer v-if="!minimalLayout" class="site-footer">
     <div class="shell">
       UMC Auth · community-operated Minecraft account service
     </div>

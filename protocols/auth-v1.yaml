@@ -709,6 +709,91 @@ paths:
           description: Queued for retry
         "404":
           $ref: "#/components/responses/NotFound"
+  /admin/invites:
+    get:
+      tags: [Admin]
+      summary: List invite codes
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+      responses:
+        "200":
+          description: Invite codes (plaintext codes are never returned)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [invites]
+                properties:
+                  invites:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Invite"
+    post:
+      tags: [Admin]
+      summary: Create a batch of invite codes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [count, uses, days]
+              properties:
+                count:
+                  type: integer
+                  minimum: 1
+                  maximum: 50
+                uses:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                days:
+                  type: integer
+                  minimum: 1
+                  maximum: 365
+                note:
+                  type: string
+                  maxLength: 200
+      responses:
+        "201":
+          description: Codes created; plaintext values are returned only here
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [codes, invites]
+                properties:
+                  codes:
+                    type: array
+                    items:
+                      type: string
+                  invites:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Invite"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /admin/invites/{id}/revoke:
+    post:
+      tags: [Admin]
+      summary: Revoke an invite code
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Invite revoked
+        "400":
+          $ref: "#/components/responses/BadRequest"
   /admin/servers:
     get:
       tags: [Admin]
@@ -1116,6 +1201,29 @@ components:
           enum: [classic, slim]
         updated_at:
           type: integer
+    Invite:
+      type: object
+      properties:
+        id:
+          type: integer
+        code_prefix:
+          type: string
+        note:
+          type: string
+        max_uses:
+          type: integer
+        used_count:
+          type: integer
+        expires_at:
+          type: integer
+        revoked_at:
+          type: integer
+          nullable: true
+        created_at:
+          type: integer
+        status:
+          type: string
+          enum: [active, expired, exhausted, revoked]
     GameServer:
       type: object
       properties:

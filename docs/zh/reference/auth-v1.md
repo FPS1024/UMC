@@ -16,6 +16,10 @@ https://auth.example.com/api/v1
 用户中心可以在 `account.example.com` 上调用 `/api/v1`，由 Nginx 代理到同一个服务，使浏览器 Cookie
 保持第一方。不要跨域调用这些接口。
 
+auth 域名只返回 JSON。`GET /` 返回服务元数据：
+`{"service":"UMC Auth","api":"...","yggdrasil":"..."}`。`/login` 等页面路径返回 JSON `404`；
+浏览器界面只由 account 域名提供。
+
 ## 约定
 
 - HTTPS + JSON，UTF-8，`Content-Type: application/json`。
@@ -354,6 +358,9 @@ Refresh Token 也可以来自 Cookie，或改用 Bearer Access Token。会话被
 | `GET /api/v1/admin/mail?status=&limit=` | 发件箱元数据（不返回邮件正文） |
 | `POST /api/v1/admin/mail/{id}/retry` | 重置失败邮件并重试 |
 | `GET /api/v1/admin/stats` | 用户和邮件计数 |
+| `GET /api/v1/admin/invites?limit=` | 邀请码列表，包含状态、使用次数和过期时间 |
+| `POST /api/v1/admin/invites` | `{"count", "uses", "days", "note"}`；仅本次返回明文 `codes` |
+| `POST /api/v1/admin/invites/{id}/revoke` | 吊销邀请码 |
 | `GET /api/v1/admin/servers?limit=` | 已登记的游戏服务器 |
 | `POST /api/v1/admin/servers` | `{"name", "address", "description"}` 登记服务器 |
 | `POST /api/v1/admin/servers/{id}/status` | `{"status": "active" \| "disabled"}` |

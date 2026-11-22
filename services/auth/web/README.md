@@ -49,6 +49,9 @@ go run ./cmd/umc-auth
 
 - Register, email verification, login, forgot/reset password
 - Dashboard, sessions, profile with skin and cape upload
-- Admin overview, users, audit log with search, game servers and join history, mail outbox
+- Admin overview, users, invite codes, audit log with search, game servers and join history, mail outbox
+
+The panel follows the system light/dark preference. Login and registration use a standalone,
+centered card; the rest of the panel shares the same neutral color tokens.
 
 The canonical API contract is [`protocols/auth-v1.md`](../../../protocols/auth-v1.md).

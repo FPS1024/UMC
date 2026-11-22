@@ -37,7 +37,7 @@ and the documentation pages cover certificates, environment variables, backup, a
 - `GET /api/profiles/minecraft` and profile lookup endpoints
 - Minecraft skins and capes with signed `textures` profile properties
 - A game server registry and Yggdrasil join history for administrators
-- Web sessions with HttpOnly cookies and CSRF protection
+- Short-lived access tokens with HttpOnly, SameSite=Lax refresh cookies
 - HTTPS through Nginx with operator-provided certificates
 - PostgreSQL storage with a persistent Docker volume
 - A persistent RSA signing key for profile-property signatures
@@ -118,12 +118,13 @@ join through `hasJoined` and receives the account UUID.
 ## User center and admin UI
 
 The first registered account is a superadmin. The Vue panel at `https://account.example.com` provides
-the account dashboard, sessions, profile, and an admin area for users, roles, verification,
-password resets, audit, and the mail outbox. Staff see read-only user and audit pages; administrators
-get the mutating actions.
+the account dashboard, sessions, skin/cape editing, and an admin area for users, roles,
+verification, password resets, invite codes, audit, game servers, join history, and the mail outbox.
+Staff see read-only user and audit pages; administrators get the mutating actions.
 
-The legacy HTML admin remains at `https://auth.example.com/admin` for invite codes, users, and audit
-logs. Invite codes are shown once; only a SHA-256 hash is stored.
+The auth host is JSON-only: `/` returns service metadata, and page paths return JSON `404`. The
+login and registration UI lives on `https://account.example.com/`. Invite codes are shown once;
+only a SHA-256 hash is stored.
 
 ## Configuration
 
@@ -181,8 +182,8 @@ The service also accepts `BIND_ADDR` and `DATABASE_URL` directly when run outsid
   with an `http://` PUBLIC_ORIGIN unless `ALLOW_INSECURE_HTTP=true` is set for local development.
 - Passwords are hashed with Argon2id; access tokens and web session tokens are stored only as
   SHA-256 hashes.
-- Session and CSRF cookies are HttpOnly and SameSite=Lax. CSRF tokens protect registration, login,
-  and logout forms.
+- Refresh cookies are HttpOnly and SameSite=Lax; API clients use Bearer access tokens. The legacy
+  HTML forms are no longer routed, so the auth host serves no browser UI.
 - Responses include `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
   `Permissions-Policy`, and a restrictive Content-Security-Policy.
 - The auth container runs as UID 10001 with `no-new-privileges` and a read-only root filesystem.
@@ -249,19 +250,23 @@ GET  /api/yggdrasil/api/user/profile/{uuid}
 POST /api/yggdrasil/api/profiles/minecraft
 ```
 
-Website and admin:
+Account panel on `account.example.com`:
 
 ```text
 GET  /register
 GET  /login
 GET  /dashboard
-GET  /verify-email?token=...
+GET  /verify-email
 GET  /admin
-GET  /admin/invites
 GET  /admin/users
+GET  /admin/invites
+GET  /admin/servers
 GET  /admin/audit
-GET  /api/register/challenge
+GET  /admin/mail
 ```
+
+The auth host keeps only JSON endpoints (`/`, `/api/v1`, `/api/yggdrasil`), `/textures/`, and
+`/healthz`; other paths return JSON `404`.
 
 The API is intended to be reached over HTTPS. Health check:
 
@@ -304,10 +309,10 @@ From `services/auth`:
 AUTH_DOMAIN=auth.example.com ACCOUNT_DOMAIN=account.example.com ./scripts/check-deployment.sh
 ```
 
-It verifies HTTP-to-HTTPS redirects, certificate trust and expiry, HSTS, CSP, the health endpoint,
-JSON metadata, the Secure cookie flag, that the auth port is not exposed directly, and, when
-`ACCOUNT_DOMAIN` is set, the Vue panel headers, API proxy, and SPA deep-link fallback. Run it from a
-machine that can resolve the domain.
+It verifies HTTP-to-HTTPS redirects, certificate trust and expiry, HSTS, the health endpoint,
+JSON metadata, the JSON service document and page-route `404`, that the auth port is not exposed
+directly, and, when `ACCOUNT_DOMAIN` is set, the Vue panel headers, login page, API proxy, and SPA
+deep-link fallback. Run it from a machine that can resolve the domain.
 
 ## Development
 
@@ -348,11 +353,10 @@ PGPASSWORD=devpassword go test -run TestStoreIntegration ./...
 
 ## Current limitations
 
-- Email verification is optional. The API supports password reset and resend; the legacy HTML admin
-  UI does not expose them yet.
+- Email verification is optional.
 - No email change or self-service account deletion.
-- The Vue panel covers the user center and admin workflows, including skins, capes, servers, and
-  join history. The legacy HTML admin still covers invite codes, users, and audit logs.
+- The Vue panel covers the user center and admin workflows, including skins, capes, invites,
+  servers, join history, audit, and the mail outbox.
 - Rate limiting is in-process per auth container. If you run multiple replicas, add a shared limiter
   or edge proxy.
 - Self-hosted mail is implemented and locally tested; external delivery still needs real DNS and PTR

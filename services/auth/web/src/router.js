@@ -14,6 +14,7 @@ import AdminUsersView from './views/admin/AdminUsersView.vue'
 import AdminAuditView from './views/admin/AdminAuditView.vue'
 import AdminMailView from './views/admin/AdminMailView.vue'
 import AdminServersView from './views/admin/AdminServersView.vue'
+import AdminInvitesView from './views/admin/AdminInvitesView.vue'
 import NotFoundView from './views/NotFoundView.vue'
 
 const routes = [
@@ -82,6 +83,12 @@ const routes = [
     name: 'admin-audit',
     component: AdminAuditView,
     meta: { requiresAuth: true, requiresStaff: true, title: 'Audit log' },
+  },
+  {
+    path: '/admin/invites',
+    name: 'admin-invites',
+    component: AdminInvitesView,
+    meta: { requiresAuth: true, requiresAdmin: true, title: 'Invite codes' },
   },
   {
     path: '/admin/servers',

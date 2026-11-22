@@ -221,6 +221,11 @@ export const api = {
     retryMail: (id) =>
       request(`/admin/mail/${encodeURIComponent(id)}/retry`, { method: 'POST' }),
     servers: (limit = 100) => request(`/admin/servers?limit=${limit}`),
+    invites: (limit = 100) => request(`/admin/invites?limit=${limit}`),
+    createInvites: (payload) =>
+      request('/admin/invites', { method: 'POST', body: payload }),
+    revokeInvite: (id) =>
+      request(`/admin/invites/${encodeURIComponent(id)}/revoke`, { method: 'POST' }),
     createServer: (payload) =>
       request('/admin/servers', { method: 'POST', body: payload }),
     setServerStatus: (id, status) =>

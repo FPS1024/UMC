@@ -79,7 +79,7 @@ certs/privkey.pem
 ```
 
 A certificate with both names as SANs or a wildcard certificate works. The default layout expects two
-names: the auth host serves the API and legacy pages, and the account host serves the Vue panel.
+names: the auth host is JSON-only for API clients, and the account host serves the Vue panel.
 Keeping both entries with the same name produces a duplicate `server_name`.
 
 ## Verify
@@ -91,9 +91,8 @@ curl -fsSI https://account.example.com/ | head
 ```
 
 `/healthz` returns `ok`, the metadata endpoint returns JSON, and the account host serves the Vue
-panel. Register the first account at `https://account.example.com/register` (the legacy page remains
-at `https://auth.example.com/register`). With `BOOTSTRAP_TOKEN` set, the first account becomes a
-superadmin. Remove the token after setup.
+panel. Register the first account at `https://account.example.com/register`. With `BOOTSTRAP_TOKEN`
+set, the first account becomes a superadmin. Remove the token after setup.
 
 The deployment check runs from the parent directory:
 
@@ -101,7 +100,8 @@ The deployment check runs from the parent directory:
 AUTH_DOMAIN=auth.example.com ACCOUNT_DOMAIN=account.example.com ../scripts/check-deployment.sh
 ```
 
-It expects the CSP header from the Go service and the Secure CSRF cookie; Nginx adds HSTS.
+It expects the auth host to return JSON for `/` and JSON `404` for page routes, and checks the
+account panel CSP and SPA fallback. Nginx adds HSTS.
 
 ## Web panel
 

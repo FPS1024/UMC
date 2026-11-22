@@ -26,7 +26,7 @@ UMC Auth 由三个容器组成：Nginx、Go 认证 API 和 PostgreSQL。Nginx �
 - `user`、`moderator`、`admin`、`superadmin` 角色
 - Yggdrasil `authenticate`、`refresh`、`validate`、`invalidate`、`signout`、`join`、`hasJoined` 和档案接口
 - Minecraft 皮肤和披风，以及带签名的 `textures` 档案属性
-- 带 HttpOnly Cookie 和 CSRF 保护的 Web 会话
+- 短时 Access Token 和 HttpOnly、SameSite=Lax 的 Refresh Cookie
 - 用户、游戏服务器和审计的管理页面；角色、手动验证、重置密码、邮件日志、加入记录和统计的管理 API
 - 可选的 Cloudflare Turnstile 或自建工作量证明
 - 按 IP、IPv6 `/64` 和全局限流
@@ -77,7 +77,7 @@ https://account.example.com/
 
 在 `/register` 注册第一个账号。如果设置了 `BOOTSTRAP_TOKEN`，注册页会要求填写。第一个账号会成为 superadmin，并绕过邀请码、CAPTCHA 和邮箱验证，以便初始化实例。初始化完成后请删除或更换 `BOOTSTRAP_TOKEN`。
 
-旧的 HTML 注册页和管理页仍保留在 `https://auth.example.com/`。
+auth 域名只提供 API。`/`、`/api/v1`、`/api/yggdrasil` 和 `/textures/` 返回 JSON，其他路径返回 JSON `404`。登录和注册页面位于 `https://account.example.com/`。
 
 ## 认证地址
 
@@ -108,10 +108,10 @@ java -javaagent:authlib-injector.jar=https://auth.example.com/api/yggdrasil \
 
 ### 邀请码
 
-管理员在下面的页面创建邀请码：
+管理员在账号面板中创建邀请码：
 
 ```text
-https://auth.example.com/admin/invites
+https://account.example.com/admin/invites
 ```
 
 邀请码可以设置最大使用次数、过期时间和备注。明文只在创建时显示一次，数据库只保存 SHA-256 哈希，并且可以随时吊销。
@@ -119,23 +119,14 @@ https://auth.example.com/admin/invites
 注册链接可以预填邀请码：
 
 ```text
-https://auth.example.com/register?invite=UMC-XXXX-XXXX-XXXX
+https://account.example.com/register?invite=UMC-XXXX-XXXX-XXXX
 ```
 
 ## 用户中心与管理后台
 
-`https://account.example.com` 上的 Vue 3 面板提供注册、邮箱验证、登录、找回密码、账号仪表盘、会话和个人资料。staff 和管理员还可以使用用户搜索、状态、角色、手动验证、重置密码、审计日志和发件箱页面。
+`https://account.example.com` 上的 Vue 3 面板提供注册、邮箱验证、登录、找回密码、账号仪表盘、会话、皮肤/披风编辑和个人资料。staff 和管理员还可以使用用户搜索、状态、角色、手动验证、重置密码、邀请码、审计日志、游戏服务器、加入记录和发件箱页面。
 
-旧的 HTML 管理页仍保留在 `https://auth.example.com/admin`：
-
-| 页面 | 用途 |
-|---|---|
-| `/admin` | 用户数量、当前模式、最近操作 |
-| `/admin/invites` | 创建、查看和吊销邀请码 |
-| `/admin/users` | 查看账号并禁用非管理员用户 |
-| `/admin/audit` | 最近的管理和注册操作 |
-
-两个界面使用同一套账号、会话和审计数据。目前没有独立的管理员密码，也没有两步验证。
+目前没有独立的管理员密码，也没有两步验证。
 
 ## 邮箱验证
 
@@ -241,12 +232,12 @@ AUTH_DOMAIN=auth.example.com ACCOUNT_DOMAIN=account.example.com ./scripts/check-
 - HTTP 是否跳转 HTTPS
 - TLS 证书链是否可信
 - 证书是否至少还有 7 天
-- HSTS 和 Content-Security-Policy
-- `/healthz`
+- auth 域名的 HSTS
+- `/healthz` 和 `/` 的 JSON 服务信息
 - Yggdrasil 元数据 Content-Type
-- CSRF Cookie 是否带 `Secure`
+- auth 域名的页面路径是否返回 JSON `404`
 - 8080 端口是否未直接暴露
-- 账号面板的 CSP、HSTS、API 代理和 SPA 深链接回退
+- 账号面板的 CSP、HSTS、登录页、API 代理和 SPA 深链接回退
 
 ## 账号 API v1
 
@@ -274,8 +265,8 @@ GET  /api/v1/profiles/by-username/{name}
 GET  /textures/{skin|cape}/{uuid}/{sha256}
 ```
 
-`/api/v1/admin/` 下的管理端接口覆盖用户搜索、禁用/启用、角色、手动验证邮箱、重置密码、审计搜索、
-发件箱、游戏服务器登记、加入记录和统计。正式契约见 [UMC Auth API v1](../reference/auth-v1)。
+`/api/v1/admin/` 下的管理端接口覆盖用户搜索、禁用/启用、角色、手动验证邮箱、重置密码、邀请码、
+审计搜索、发件箱、游戏服务器登记、加入记录和统计。正式契约见 [UMC Auth API v1](../reference/auth-v1)。
 
 Access Token 默认 15 分钟。Refresh Token 默认 30 天，每次使用都会轮换；重复使用会撤销整个会话族。
 Web 客户端通过 HttpOnly Cookie 接收 Refresh Token，其他客户端从 JSON 中获取。
@@ -344,7 +335,7 @@ docker compose start auth-api
 
 - 密码使用 Argon2id；访问 Token 和 Web 会话 Token 只保存 SHA-256 哈希。
 - 上传文件限制为 1 MB，并校验 PNG 及皮肤/披风尺寸；纹理 URL 带内容哈希且不可变。
-- Cookie 为 HttpOnly + SameSite=Lax；表单使用 CSRF Token。
+- Refresh Cookie 为 HttpOnly + SameSite=Lax；Access Token 为短时 Bearer Token。auth 域名不提供 HTML 表单。
 - auth 容器以非 root 用户运行，根文件系统只读。
 - 公网只暴露 Nginx 的 80/443；auth 应用和 PostgreSQL 端口保持内部访问。
 - 公开注册通常应使用邀请码，或启用 CAPTCHA/PoW 并配合限流。

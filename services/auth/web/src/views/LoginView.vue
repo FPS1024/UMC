@@ -44,19 +44,19 @@ async function submit() {
   <div class="auth-wrap">
     <section class="auth-card">
       <div class="auth-heading">
-        <p class="eyebrow">Account</p>
         <h1>Welcome back</h1>
-        <p>Sign in with your username or email address.</p>
+        <p>Sign in with your username or email to continue.</p>
       </div>
 
       <div v-if="notice" class="alert alert-success">{{ notice }}</div>
 
       <form class="form-stack" @submit.prevent="submit">
         <label class="field">
-          <span>Username or email</span>
+          <span>Email or username</span>
           <input
             v-model.trim="form.login"
             autocomplete="username"
+            placeholder="name@example.com"
             autofocus
             required
             @input="error = ''"
@@ -70,6 +70,7 @@ async function submit() {
               v-model="form.password"
               :type="showPassword ? 'text' : 'password'"
               autocomplete="current-password"
+              placeholder="••••••••"
               required
               @input="error = ''"
             />
@@ -83,7 +84,15 @@ async function submit() {
           </span>
         </label>
 
-        <div v-if="error" class="alert alert-error">
+        <div class="auth-helper">
+          <RouterLink to="/forgot-password">Forgot password?</RouterLink>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit" :disabled="loading">
+          {{ loading ? 'Signing in…' : 'Sign in' }}
+        </button>
+
+        <div v-if="error" class="message error">
           {{ error }}
           <RouterLink
             v-if="errorCode === 'email_not_verified'"
@@ -92,15 +101,11 @@ async function submit() {
             Verify email
           </RouterLink>
         </div>
-
-        <button class="btn btn-primary btn-block" type="submit" :disabled="loading">
-          {{ loading ? 'Signing in…' : 'Sign in' }}
-        </button>
       </form>
 
-      <div class="auth-links">
-        <RouterLink to="/forgot-password">Forgot password?</RouterLink>
-        <RouterLink to="/register">Create an account</RouterLink>
+      <div class="auth-footer">
+        Don't have an account?
+        <RouterLink to="/register">Create one</RouterLink>
       </div>
     </section>
   </div>

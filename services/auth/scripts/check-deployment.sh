@@ -52,9 +52,6 @@ headers="$(curl -fsSI "${BASE}/")"
 echo "$headers" | grep -qi '^strict-transport-security:' || fail "HSTS header is missing"
 pass "HSTS header"
 
-echo "$headers" | grep -qi '^content-security-policy:' || fail "CSP header is missing"
-pass "Content-Security-Policy header"
-
 content_type="$(curl -fsSI "${BASE}/api/yggdrasil" | tr -d '\r' | awk -F': ' 'tolower($1)=="content-type" {print $2}')"
 case "$content_type" in
 	application/json*) ;;
@@ -62,14 +59,18 @@ case "$content_type" in
 esac
 pass "Yggdrasil metadata"
 
-if curl -fsS -D /tmp/umc-auth-login-headers "${BASE}/login" -o /dev/null; then
-	if grep -i '^set-cookie: umc_auth_csrf=' /tmp/umc-auth-login-headers | grep -qi 'secure'; then
-		pass "CSRF cookie is Secure"
-	else
-		fail "CSRF cookie is missing the Secure flag"
-	fi
-else
-	fail "login page is not reachable"
+if [ -n "$ACCOUNT_DOMAIN" ]; then
+	root_json="$(curl -fsS "${BASE}/")" || fail "auth root did not return JSON"
+	echo "$root_json" | grep -q '"service":"UMC Auth"' ||
+		fail "auth root did not return the service metadata"
+	pass "auth root returns service JSON"
+
+	page_headers="$(curl -sSI "${BASE}/login")"
+	echo "$page_headers" | head -1 | grep -q ' 404' ||
+		fail "auth host served a page instead of a JSON 404"
+	echo "$page_headers" | grep -qi '^content-type: application/json' ||
+		fail "auth host 404 is not JSON"
+	pass "auth host returns JSON 404 for page routes"
 fi
 
 if timeout 3 bash -c "</dev/tcp/${AUTH_DOMAIN}/8080" 2>/dev/null; then
@@ -85,6 +86,10 @@ if [ -n "$ACCOUNT_DOMAIN" ]; then
 	echo "$headers" | grep -qi '^strict-transport-security:' ||
 		fail "account panel is missing HSTS"
 	pass "account panel headers"
+
+	curl -fsS "${ACCOUNT_BASE}/login" | grep -q '<div id="app">' ||
+		fail "account login page did not return the Vue panel"
+	pass "account login page"
 
 	curl -fsS "${ACCOUNT_BASE}/api/v1/meta" | grep -q '"server_name"' ||
 		fail "account panel API proxy did not return metadata"

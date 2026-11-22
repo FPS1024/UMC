@@ -16,7 +16,7 @@ source: en/services/auth-deployment.md
 这是 UMC Auth 唯一支持的部署拓扑。
 
 - Nginx 发布 80 和 443 端口。认证 API 和 PostgreSQL 从不发布端口。
-- `auth.example.com` 提供账号 API、Yggdrasil 和当前 Web 页面。
+- `auth.example.com` 只提供 JSON：账号 API、Yggdrasil、纹理、健康检查，以及 `/` 的服务元数据。其他路径返回 JSON `404`。
 - `account.example.com` 提供 Vue 用户中心和管理面板，并把 `/api/` 代理到认证服务，使浏览器 Cookie 保持第一方。
 - 邮件是独立服务，通过 SMTP 连接，不属于账号核心。
 - 启动器的 Microsoft 登录路线独立存在，不受本部署影响。
@@ -60,11 +60,11 @@ java -javaagent:authlib-injector.jar=https://auth.example.com/api/yggdrasil \
 
 ## 域名规划
 
-| 域名 | 用途 | 第一阶段行为 |
+| 域名 | 用途 | 行为 |
 |---|---|---|
-| `auth.example.com` | 认证 API、Yggdrasil、当前注册页和管理后台 | 由 Go 服务直接提供 |
+| `auth.example.com` | 认证 API、Yggdrasil、纹理、健康检查 | 纯 API；`/` 返回 JSON，页面路径返回 JSON 404 |
 | `account.example.com` | Vue 用户中心和管理面板 | 提供 SPA 并代理 `/api/` |
-| `mail.example.com` | 未来自建邮件主机名 | 暂不创建 |
+| `mail.example.com` | 可选的自建邮件主机名 | 启用 Stalwart profile 时使用 |
 | `example.com` | 社区主站 | 与本栈无关 |
 
 请使用同时覆盖 `auth` 和 `account` 的证书，或通配符证书。如果只有一个域名，请同时删除 Nginx 模板中的
@@ -203,14 +203,18 @@ docker compose logs -f auth-api
 
 ```sh
 curl -fsS https://auth.example.com/healthz
+curl -fsS https://auth.example.com/
 curl -fsSI https://auth.example.com/api/yggdrasil
+curl -sSI https://auth.example.com/login | head -1
 curl -fsSI https://account.example.com/ | head
 ```
 
 预期结果：
 
 - `/healthz` 返回 `ok`。
+- `/` 返回 `{"service":"UMC Auth",...}` JSON。
 - `/api/yggdrasil` 返回 JSON 元数据。
+- `/login` 返回 JSON `404`；auth 域名不提供任何 HTML 页面。
 - `account.example.com` 提供 Vue 面板，并把 `/api/` 代理到认证服务。
 - HTTP 跳转到 HTTPS，并带有 HSTS。
 
@@ -222,7 +226,7 @@ AUTH_DOMAIN=auth.example.com ACCOUNT_DOMAIN=account.example.com ../scripts/check
 
 ### 7. 初始化第一个账号
 
-打开 `https://auth.example.com/register`，填写 `BOOTSTRAP_TOKEN`。第一个账号会成为 superadmin，并绕过邀请码、CAPTCHA 和邮箱验证。初始化完成后从 `.env` 删除 `BOOTSTRAP_TOKEN` 并重启 API：
+打开 `https://account.example.com/register`，填写 `BOOTSTRAP_TOKEN`。第一个账号会成为 superadmin，并绕过邀请码、CAPTCHA 和邮箱验证。初始化完成后从 `.env` 删除 `BOOTSTRAP_TOKEN` 并重启 API：
 
 ```sh
 docker compose up -d auth-api
@@ -235,10 +239,12 @@ docker compose up -d auth-api
 - HTTP 到 HTTPS 跳转，并保留 ACME 验证路径。
 - TLS 1.2 和 1.3、会话缓存和 HSTS。
 - 转发 `Host`、`X-Real-IP`、`X-Forwarded-For` 和 `X-Forwarded-Proto`。
-- 边缘限流：登录和注册每分钟 20 次，Yggdrasil API 每秒 30 次。
+- 边缘限流：登录和注册每分钟 20 次，刷新每分钟 60 次，API 每秒 30 次，Yggdrasil 使用同一 API 限流。
 - 公开的 `/healthz`。
+- auth 域名的 `/` 返回服务元数据 JSON；API、Yggdrasil、纹理和健康检查走反向代理。其他路径返回 JSON `404`，不再提供 HTML 页面。
 - SPA history 模式回退（`try_files ... /index.html`）。
 - 同源 `/api/` 反代，复用相同的代理头和边缘限流。
+- 请求体上限 3 MB，适配 1 MB 纹理上传及 multipart 开销。
 
 应用自身仍会执行进程内限流。边缘限流是第二层防护，不能替代应用限流。
 
@@ -257,7 +263,8 @@ docker compose up -d auth-api
 
 ## PostgreSQL 与数据模型
 
-PostgreSQL 不发布端口，只位于 `internal` 网络。`auth-db` 卷是本栈唯一的持久状态。
+PostgreSQL 不发布端口，只位于 `internal` 网络。`auth-db` 卷保存账号和元数据；`auth-uploads`
+卷保存皮肤和披风文件。
 
 表结构由 `services/auth/cmd/umc-auth/migrations` 中的内嵌版本化迁移管理。`0001` 是原始幂等表结构；
 `0002` 增加账号 API 所需的列和表，并原地回填已有数据；`0003` 将规范化身份列设为非空。
@@ -343,7 +350,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS users_email_normalized
 | `GET /api/v1/profiles/{uuid}` | 按 UUID 查询档案 |
 | `GET /api/v1/profiles/by-username/{name}` | 按玩家名查询档案 |
 | `GET /textures/{skin\|cape}/{uuid}/{sha256}` | 公开且不可变的纹理文件 |
-| `/api/v1/admin/*` | 用户搜索、状态、角色、手动验证、重置密码、审计搜索、邮件、服务器、加入记录、统计 |
+| `/api/v1/admin/*` | 用户搜索、状态、角色、手动验证、重置密码、邀请码、审计搜索、邮件、服务器、加入记录、统计 |
 
 Vue 面板通过 `account.example.com/api/v1` 使用同一套 API，由 Nginx 代理到认证服务。
 
@@ -466,7 +473,7 @@ SPF、DKIM 和 DMARC。部分 VPS 服务商会封锁出站 TCP 25，决定自建
 - 密码使用 Argon2id；Access、Refresh、会话、邀请码和验证 Token 只保存哈希。
 - 邮件待发送时，发件箱正文会包含验证码。投递成功后会清空正文；待发送记录和数据库备份都应按敏感数据处理。
 - 在 Nginx 终止 HTTPS，认证 API 和数据库不进入公网。
-- Web 表单保留 CSRF 保护，Cookie 使用 `Secure`、`HttpOnly`、`SameSite=Lax`。
+- Refresh Cookie 使用 `Secure`、`HttpOnly`、`SameSite=Lax`，并保持 auth 域名只返回 JSON。
 - 公开注册应使用邀请码、工作量证明或 Turnstile，并配合限流。
 - 不允许匿名 SMTP 转发，也不开放无限量的公共邮箱注册。
 - 管理操作和安全事件写入审计日志。

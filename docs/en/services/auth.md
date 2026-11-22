@@ -32,7 +32,7 @@ route is separate and unchanged.
 - Yggdrasil `authenticate`, `refresh`, `validate`, `invalidate`, `signout`, `join`, `hasJoined`, and
   profile endpoints
 - Minecraft skins and capes with signed `textures` profile properties
-- Web sessions with HttpOnly cookies and CSRF protection
+- Short-lived access tokens with HttpOnly, SameSite=Lax refresh cookies
 - Admin UI for users, servers, and audit; admin API for roles, manual verification, password reset,
   mail logs, join history, and statistics
 - Optional Cloudflare Turnstile or self-hosted proof-of-work
@@ -87,7 +87,9 @@ Register the first account at `/register`. If `BOOTSTRAP_TOKEN` is set, enter it
 first account becomes a superadmin and bypasses invites, CAPTCHA, and email verification so the
 instance can be bootstrapped. Remove or change `BOOTSTRAP_TOKEN` after setup.
 
-The legacy HTML registration and admin pages remain available at `https://auth.example.com/`.
+The auth host is API-only. It returns JSON from `/`, `/api/v1`, `/api/yggdrasil`, and
+`/textures/`; other paths return a JSON `404`. The login and registration UI lives on
+`https://account.example.com/`.
 
 ## Authentication endpoint
 
@@ -119,10 +121,10 @@ Set `REGISTRATION_MODE` in `deploy/.env`.
 
 ### Invite codes
 
-Administrators create codes in:
+Administrators create codes in the account panel:
 
 ```text
-https://auth.example.com/admin/invites
+https://account.example.com/admin/invites
 ```
 
 A code can have a maximum number of uses, an expiry date, and a note. The plaintext code is shown
@@ -131,27 +133,17 @@ once; the database stores only its SHA-256 hash. Codes can be revoked at any tim
 A registration link can prefill the code:
 
 ```text
-https://auth.example.com/register?invite=UMC-XXXX-XXXX-XXXX
+https://account.example.com/register?invite=UMC-XXXX-XXXX-XXXX
 ```
 
 ## User center and admin panel
 
 The Vue 3 panel at `https://account.example.com` provides registration, email verification, login,
-password recovery, the account dashboard, sessions, and profile pages. Staff and administrators get
-an admin area for user search, status, roles, manual verification, password reset, the audit log,
-and the mail outbox.
+password recovery, the account dashboard, sessions, skin/cape editing, and profile pages. Staff and
+administrators get an admin area for user search, status, roles, manual verification, password
+reset, invite codes, the audit log, game servers, join history, and the mail outbox.
 
-The legacy HTML admin remains at `https://auth.example.com/admin`:
-
-| Page | Purpose |
-|---|---|
-| `/admin` | User count, current modes, recent activity |
-| `/admin/invites` | Create, inspect, and revoke invite codes |
-| `/admin/users` | Inspect accounts and disable non-admin users |
-| `/admin/audit` | Recent administrator and registration actions |
-
-Both interfaces use the same accounts, sessions, and audit data. There is no separate admin password
-and no two-factor authentication yet.
+There is no separate admin password and no two-factor authentication yet.
 
 ## Email verification
 
@@ -265,12 +257,12 @@ The script checks:
 - HTTP-to-HTTPS redirect
 - Trusted TLS certificate chain
 - Certificate validity for at least seven more days
-- HSTS and Content-Security-Policy headers
-- `/healthz`
+- HSTS on the auth host
+- `/healthz` and the JSON service document at `/`
 - Yggdrasil metadata content type
-- `Secure` on the CSRF cookie
+- JSON `404` for auth-host page routes
 - Port 8080 is not directly reachable
-- Account panel CSP, HSTS, API proxy, and SPA deep-link fallback
+- Account panel CSP, HSTS, login page, API proxy, and SPA deep-link fallback
 
 ## Account API v1
 
@@ -300,8 +292,8 @@ GET  /textures/{skin|cape}/{uuid}/{sha256}
 ```
 
 Admin endpoints under `/api/v1/admin/` cover user search, disable/enable, roles, manual email
-verification, password reset, audit search, the mail outbox, game server registration, join history,
-and statistics. The canonical contract is [UMC Auth API v1](../reference/auth-v1).
+verification, password reset, invite codes, audit search, the mail outbox, game server registration,
+join history, and statistics. The canonical contract is [UMC Auth API v1](../reference/auth-v1).
 
 Access tokens default to 15 minutes. Refresh tokens default to 30 days, rotate on use, and revoke
 the whole session family when reused. Web clients receive the refresh token as an HttpOnly cookie;
@@ -373,7 +365,8 @@ signing key.
 - Passwords use Argon2id; access tokens and web session tokens are stored only as SHA-256 hashes.
 - Uploads are limited to 1 MB and validated as PNGs with skin/cape dimensions; texture URLs are
   content-hashed and immutable.
-- Cookies are HttpOnly and SameSite=Lax; forms use CSRF tokens.
+- Refresh cookies are HttpOnly and SameSite=Lax; access tokens are short-lived Bearer tokens. The
+  auth host does not serve HTML forms.
 - The auth container runs as a non-root user with a read-only root filesystem.
 - Nginx ports 80 and 443 are the only public ports; the auth application and PostgreSQL ports stay
   internal.

@@ -13,6 +13,10 @@ https://auth.example.com/api/v1
 The account panel may call `/api/v1` on `account.example.com`; Nginx proxies that path to the same
 service so browser cookies remain first-party. Do not send these requests cross-origin.
 
+The auth host is JSON-only. `GET /` returns service metadata:
+`{"service":"UMC Auth","api":"...","yggdrasil":"..."}`. Page paths such as `/login` return a JSON
+`404`; the browser UI is served only from the account host.
+
 ## Conventions
 
 - JSON over HTTPS, UTF-8, `Content-Type: application/json`.
@@ -368,6 +372,9 @@ All admin endpoints require staff access. A `moderator` may list users and read 
 | `GET /api/v1/admin/mail?status=&limit=` | Mail outbox metadata (message bodies are not returned) |
 | `POST /api/v1/admin/mail/{id}/retry` | Reset a failed message and retry it |
 | `GET /api/v1/admin/stats` | User and mail counters |
+| `GET /api/v1/admin/invites?limit=` | Invite codes with status, uses, and expiry |
+| `POST /api/v1/admin/invites` | `{"count", "uses", "days", "note"}`; returns plaintext `codes` once |
+| `POST /api/v1/admin/invites/{id}/revoke` | Revoke an invite code |
 | `GET /api/v1/admin/servers?limit=` | Registered game servers |
 | `POST /api/v1/admin/servers` | `{"name", "address", "description"}` to register a server |
 | `POST /api/v1/admin/servers/{id}/status` | `{"status": "active" \| "disabled"}` |

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -90,6 +91,31 @@ func apiRequest(t *testing.T, client *http.Client, method, url, token string, bo
 	}
 	response.Body.Close()
 	return response, payload
+}
+
+func TestJSONOnlyRootAndFallback(t *testing.T) {
+	store := newTestStore(t)
+	app := newTestApp(t, store)
+	server := httptest.NewServer(app.routes())
+	defer server.Close()
+	client := server.Client()
+
+	response, root := apiRequest(t, client, http.MethodGet, server.URL+"/", "", nil)
+	if response.StatusCode != http.StatusOK || root["service"] != "UMC Auth" {
+		t.Fatalf("root did not return service JSON: %d %+v", response.StatusCode, root)
+	}
+
+	response, notFound := apiRequest(t, client, http.MethodGet, server.URL+"/login", "", nil)
+	if response.StatusCode != http.StatusNotFound {
+		t.Fatalf("page route did not return 404: %d", response.StatusCode)
+	}
+	errorBody, _ := notFound["error"].(map[string]any)
+	if errorBody["code"] != "not_found" {
+		t.Fatalf("page route did not return a JSON error: %+v", notFound)
+	}
+	if contentType := response.Header.Get("Content-Type"); !strings.HasPrefix(contentType, "application/json") {
+		t.Fatalf("fallback was not JSON: %s", contentType)
+	}
 }
 
 func TestAPIRegisterLoginRefreshLogout(t *testing.T) {

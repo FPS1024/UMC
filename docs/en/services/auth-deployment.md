@@ -15,7 +15,8 @@ changing the account core.
 This is the only supported UMC Auth deployment topology.
 
 - Nginx publishes ports 80 and 443. The auth API and PostgreSQL are never published.
-- `auth.example.com` serves the account API, Yggdrasil, and the current web pages.
+- `auth.example.com` serves JSON only: the account API, Yggdrasil, textures, health check, and a
+  service metadata document at `/`. Other paths return a JSON `404`.
 - `account.example.com` serves the Vue user center and admin panel, and proxies `/api/` to the auth
   service so browser cookies remain first-party.
 - Mail is a separate service reached over SMTP. It is not part of the account core.
@@ -63,11 +64,11 @@ is tracked separately and is not provided by this environment.
 
 ## Domain plan
 
-| Name | Purpose | Phase 1 behavior |
+| Name | Purpose | Behavior |
 |---|---|---|
-| `auth.example.com` | Auth API, Yggdrasil, current registration and admin pages | Serves the Go service |
+| `auth.example.com` | Auth API, Yggdrasil, textures, health check | API-only; `/` is JSON and page paths return JSON 404 |
 | `account.example.com` | Vue user center and admin panel | Serves the SPA and proxies `/api/` |
-| `mail.example.com` | Future self-hosted mail host | Not created yet |
+| `mail.example.com` | Optional self-hosted mail host | Stalwart profile when enabled |
 | `example.com` | Community root site | Independent of this stack |
 
 Use one TLS certificate that covers both `auth` and `account`, or a wildcard certificate. If you
@@ -218,14 +219,18 @@ docker compose logs -f auth-api
 
 ```sh
 curl -fsS https://auth.example.com/healthz
+curl -fsS https://auth.example.com/
 curl -fsSI https://auth.example.com/api/yggdrasil
+curl -sSI https://auth.example.com/login | head -1
 curl -fsSI https://account.example.com/ | head
 ```
 
 Expected results:
 
 - `/healthz` returns `ok`.
+- `/` returns `{"service":"UMC Auth",...}` JSON.
 - `/api/yggdrasil` returns JSON metadata.
+- `/login` returns a JSON `404`; the auth host never serves an HTML page.
 - `account.example.com` serves the Vue panel and proxies `/api/` to the auth service.
 - HTTP redirects to HTTPS and HSTS is present.
 
@@ -237,7 +242,7 @@ AUTH_DOMAIN=auth.example.com ACCOUNT_DOMAIN=account.example.com ../scripts/check
 
 ### 7. Bootstrap the first account
 
-Open `https://auth.example.com/register` and enter `BOOTSTRAP_TOKEN`. The first account becomes a
+Open `https://account.example.com/register` and enter `BOOTSTRAP_TOKEN`. The first account becomes a
 superadmin and bypasses invites, CAPTCHA, and email verification. Remove `BOOTSTRAP_TOKEN` from
 `.env` and restart the API after setup:
 
@@ -255,8 +260,11 @@ The bundled template provides:
 - Edge rate limits: 20 requests per minute for sign-in and registration, 60 per minute for token
   refresh, 30 requests per second for the API, and the Yggdrasil API limit.
 - A public `/healthz` endpoint.
+- On the auth host, `/` returns service metadata JSON; API, Yggdrasil, textures, and health check
+  are proxied. Every other path returns a JSON `404` instead of an HTML page.
 - Static SPA serving with history-mode fallback (`try_files ... /index.html`).
 - Same-origin `/api/` proxying with the same proxy headers and edge rate limits.
+- A 3 MB request-body limit, sized for 1 MB texture uploads plus multipart overhead.
 
 The application still applies its own in-process limits. Edge limits are a second layer, not a
 replacement.
@@ -278,8 +286,8 @@ reachable container port is still unnecessary exposure.
 
 ## PostgreSQL and data model
 
-PostgreSQL has no published port and lives on the `internal` network. The `auth-db` volume is the
-only persistent state in the stack.
+PostgreSQL has no published port and lives on the `internal` network. The `auth-db` volume stores
+accounts and metadata; `auth-uploads` stores skin and cape files.
 
 The schema is managed by embedded versioned migrations in
 `services/auth/cmd/umc-auth/migrations`. `0001` is the original idempotent schema; `0002` adds the
@@ -367,7 +375,7 @@ The account API is implemented. The canonical contract is [UMC Auth API v1](../r
 | `GET /api/v1/profiles/{uuid}` | Profile by UUID |
 | `GET /api/v1/profiles/by-username/{name}` | Profile by player name |
 | `GET /textures/{skin\|cape}/{uuid}/{sha256}` | Public immutable texture files |
-| `/api/v1/admin/*` | User search, status, roles, manual verification, password reset, audit search, mail, servers, join history, stats |
+| `/api/v1/admin/*` | User search, status, roles, manual verification, password reset, invite codes, audit search, mail, servers, join history, stats |
 
 The Vue panel uses the same API through `account.example.com/api/v1`, which Nginx proxies to the auth
 service.
@@ -497,7 +505,7 @@ Recommendations:
 - The mail outbox contains a code in the message body while a message is pending. Delivery clears the
   body; protect pending rows and database backups as sensitive.
 - Terminate HTTPS at Nginx and keep the auth API and database off the public network.
-- Keep CSRF protection on web forms and `Secure`, `HttpOnly`, `SameSite=Lax` cookies.
+- Keep refresh cookies `Secure`, `HttpOnly`, and `SameSite=Lax`, and keep the auth host JSON-only.
 - Keep public registration behind invites, proof-of-work, or Turnstile plus rate limits.
 - Do not allow anonymous SMTP relay or open mail registration.
 - Record administrative actions and security-relevant events in the audit log.

@@ -375,6 +375,18 @@ type apiRegisterRequest struct {
 	Client         string `json:"client"`
 }
 
+func (a *App) apiRoot(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{
+		"service":   "UMC Auth",
+		"api":       a.cfg.PublicOrigin + "/api/v1",
+		"yggdrasil": a.yggdrasilURL(),
+	})
+}
+
+func (a *App) apiNotFound(w http.ResponseWriter, r *http.Request) {
+	apiV1Error(w, http.StatusNotFound, "not_found", "This host only serves the UMC Auth API")
+}
+
 func (a *App) apiMeta(w http.ResponseWriter, r *http.Request) {
 	if !a.allowLimited(a.apiLimiter, r) {
 		w.Header().Set("Retry-After", "60")
