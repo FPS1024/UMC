@@ -97,7 +97,7 @@ func (a *App) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profile := profileJSON(user.UUID, user.Username)
+	profile := a.profileResponse(user)
 	response := map[string]any{
 		"accessToken":       accessToken,
 		"clientToken":       clientToken,
@@ -133,7 +133,7 @@ func (a *App) refresh(w http.ResponseWriter, r *http.Request) {
 		apiError(w, http.StatusInternalServerError, "InternalServerError", "An internal error occurred")
 		return
 	}
-	profile := profileJSON(user.UUID, user.Username)
+	profile := a.profileResponse(user)
 	response := map[string]any{
 		"accessToken":     accessToken,
 		"clientToken":     clientToken,
@@ -222,10 +222,12 @@ func (a *App) join(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ip := clientIP(r, a.cfg.TrustProxyHeaders)
-	if err := a.store.InsertJoin(user.ID, user.Username, request.ServerID, ip, time.Now().Unix()); err != nil {
+	now := time.Now().Unix()
+	if err := a.store.InsertJoin(user.ID, user.Username, request.ServerID, ip, now); err != nil {
 		apiError(w, http.StatusInternalServerError, "InternalServerError", "An internal error occurred")
 		return
 	}
+	_ = a.store.RecordServerJoin(user.ID, request.ServerID, user.Username, ip, now)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -238,7 +240,7 @@ func (a *App) hasJoined(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	since := time.Now().Unix() - 60
-	uuid, name, ok, err := a.store.ConsumeJoin(
+	uuid, _, ok, err := a.store.ConsumeJoin(
 		serverID, username, since, r.URL.Query().Get("ip"),
 	)
 	if err != nil {
@@ -249,7 +251,12 @@ func (a *App) hasJoined(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	writeJSON(w, http.StatusOK, profileJSON(uuid, name))
+	user, err := a.store.UserByUUID(uuid)
+	if err != nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	writeJSON(w, http.StatusOK, a.profileResponse(user))
 }
 
 func (a *App) profile(w http.ResponseWriter, r *http.Request) {
@@ -262,7 +269,7 @@ func (a *App) profile(w http.ResponseWriter, r *http.Request) {
 		apiError(w, http.StatusInternalServerError, "InternalServerError", "An internal error occurred")
 		return
 	}
-	writeJSON(w, http.StatusOK, profileJSON(user.UUID, user.Username))
+	writeJSON(w, http.StatusOK, a.profileResponse(user))
 }
 
 func (a *App) profilesByName(w http.ResponseWriter, r *http.Request) {
@@ -288,7 +295,7 @@ func (a *App) profilesByName(w http.ResponseWriter, r *http.Request) {
 			apiError(w, http.StatusInternalServerError, "InternalServerError", "An internal error occurred")
 			return
 		}
-		profiles = append(profiles, profileJSON(user.UUID, user.Username))
+		profiles = append(profiles, a.profileResponse(user))
 	}
 	writeJSON(w, http.StatusOK, profiles)
 }
@@ -305,14 +312,6 @@ func (a *App) accessTokenUser(accessToken, clientToken string) (*User, string, e
 		return nil, "", sql.ErrNoRows
 	}
 	return user, storedClient, nil
-}
-
-func profileJSON(uuid, username string) map[string]any {
-	return map[string]any{
-		"id":         uuid,
-		"name":       username,
-		"properties": []any{},
-	}
 }
 
 func userJSON(uuid string) map[string]any {

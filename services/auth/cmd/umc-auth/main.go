@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"crypto/rsa"
 	"errors"
 	"log/slog"
 	"net"
@@ -11,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -22,6 +24,7 @@ type Config struct {
 	PublicOrigin           string
 	OriginHost             string
 	ServerName             string
+	UploadDir              string
 	BootstrapToken         string
 	RegistrationMode       string
 	EmailVerification      string
@@ -41,12 +44,18 @@ type Config struct {
 	LoginPerMinute         int
 	PowChallengePerMinute  int
 	ProfileLookupPerMinute int
+	AccessTokenMinutes     int
+	RefreshTokenDays       int
+	ForgotLimitPerMinute   int
+	VerifyLimitPerMinute   int
+	RefreshLimitPerMinute  int
 }
 
 type App struct {
 	store          *Store
 	cfg            Config
 	pubKeyPEM      string
+	signingKey     *rsa.PrivateKey
 	powSecret      []byte
 	poW            *PoW
 	mailer         *Mailer
@@ -58,6 +67,11 @@ type App struct {
 	loginLimiter   *slidingWindow
 	powLimiter     *slidingWindow
 	apiLimiter     *slidingWindow
+	forgotLimiter  *slidingWindow
+	verifyLimiter  *slidingWindow
+	refreshLimiter *slidingWindow
+
+	dummyPasswordHash string
 }
 
 func (a *App) yggdrasilURL() string {
@@ -183,9 +197,36 @@ func loadConfig() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	accessTokenMinutes, err := envInt("ACCESS_TOKEN_MINUTES", 15)
+	if err != nil {
+		return Config{}, err
+	}
+	refreshTokenDays, err := envInt("REFRESH_TOKEN_DAYS", 30)
+	if err != nil {
+		return Config{}, err
+	}
+	forgotLimitPerMinute, err := envInt("FORGOT_LIMIT_PER_MINUTE", 5)
+	if err != nil {
+		return Config{}, err
+	}
+	verifyLimitPerMinute, err := envInt("VERIFY_LIMIT_PER_MINUTE", 10)
+	if err != nil {
+		return Config{}, err
+	}
+	refreshLimitPerMinute, err := envInt("REFRESH_LIMIT_PER_MINUTE", 60)
+	if err != nil {
+		return Config{}, err
+	}
 	if registerPerHour < 1 || registerPerDay < 1 || registerGlobal < 1 ||
-		loginPerMinute < 1 || powChallengePerMinute < 1 || profileLookupPerMinute < 1 {
+		loginPerMinute < 1 || powChallengePerMinute < 1 || profileLookupPerMinute < 1 ||
+		forgotLimitPerMinute < 1 || verifyLimitPerMinute < 1 || refreshLimitPerMinute < 1 {
 		return Config{}, errors.New("rate limits must be positive")
+	}
+	if accessTokenMinutes < 1 || accessTokenMinutes > 1440 {
+		return Config{}, errors.New("ACCESS_TOKEN_MINUTES must be between 1 and 1440")
+	}
+	if refreshTokenDays < 1 || refreshTokenDays > 3650 {
+		return Config{}, errors.New("REFRESH_TOKEN_DAYS must be between 1 and 3650")
 	}
 	bind := env("BIND_ADDR", "0.0.0.0:8080")
 	return Config{
@@ -193,6 +234,7 @@ func loadConfig() (Config, error) {
 		PublicOrigin:           publicOrigin,
 		OriginHost:             host,
 		ServerName:             env("SERVER_NAME", "UMC Auth"),
+		UploadDir:              env("UPLOAD_DIR", "data/uploads"),
 		BootstrapToken:         os.Getenv("BOOTSTRAP_TOKEN"),
 		RegistrationMode:       registrationMode,
 		EmailVerification:      emailVerification,
@@ -212,6 +254,11 @@ func loadConfig() (Config, error) {
 		LoginPerMinute:         loginPerMinute,
 		PowChallengePerMinute:  powChallengePerMinute,
 		ProfileLookupPerMinute: profileLookupPerMinute,
+		AccessTokenMinutes:     accessTokenMinutes,
+		RefreshTokenDays:       refreshTokenDays,
+		ForgotLimitPerMinute:   forgotLimitPerMinute,
+		VerifyLimitPerMinute:   verifyLimitPerMinute,
+		RefreshLimitPerMinute:  refreshLimitPerMinute,
 	}, nil
 }
 
@@ -284,12 +331,53 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("GET /api/yggdrasil/api/user/profile/{uuid}", a.profile)
 	mux.HandleFunc("POST /api/yggdrasil/api/profiles/minecraft", a.profilesByName)
 
+	mux.HandleFunc("POST /api/v1/auth/register", a.apiRegister)
+	mux.HandleFunc("GET /api/v1/meta", a.apiMeta)
+	mux.HandleFunc("POST /api/v1/auth/verify-email", a.apiVerifyEmail)
+	mux.HandleFunc("POST /api/v1/auth/verify-email/resend", a.apiResendVerification)
+	mux.HandleFunc("POST /api/v1/auth/login", a.apiLogin)
+	mux.HandleFunc("POST /api/v1/auth/refresh", a.apiRefresh)
+	mux.HandleFunc("POST /api/v1/auth/logout", a.apiLogout)
+	mux.HandleFunc("POST /api/v1/auth/password/forgot", a.apiForgotPassword)
+	mux.HandleFunc("POST /api/v1/auth/password/reset", a.apiResetPassword)
+	mux.HandleFunc("GET /api/v1/users/me", a.apiMe)
+	mux.HandleFunc("GET /api/v1/users/me/minecraft", a.apiMinecraftProfile)
+	mux.HandleFunc("POST /api/v1/users/me/skin", a.apiUploadSkin)
+	mux.HandleFunc("DELETE /api/v1/users/me/skin", a.apiDeleteSkin)
+	mux.HandleFunc("POST /api/v1/users/me/cape", a.apiUploadCape)
+	mux.HandleFunc("DELETE /api/v1/users/me/cape", a.apiDeleteCape)
+	mux.HandleFunc("GET /api/v1/users/me/sessions", a.apiListSessions)
+	mux.HandleFunc("DELETE /api/v1/users/me/sessions/{id}", a.apiRevokeSession)
+	mux.HandleFunc("GET /api/v1/profiles/by-username/{name}", a.apiProfileByName)
+	mux.HandleFunc("GET /api/v1/profiles/{uuid}", a.apiProfile)
+
+	mux.HandleFunc("GET /api/v1/admin/users", a.apiAdminUsers)
+	mux.HandleFunc("GET /api/v1/admin/users/{id}", a.apiAdminUser)
+	mux.HandleFunc("POST /api/v1/admin/users/{id}/status", a.apiAdminUserStatus)
+	mux.HandleFunc("POST /api/v1/admin/users/{id}/role", a.apiAdminUserRole)
+	mux.HandleFunc("POST /api/v1/admin/users/{id}/verify-email", a.apiAdminVerifyEmail)
+	mux.HandleFunc("POST /api/v1/admin/users/{id}/reset-password", a.apiAdminResetPassword)
+	mux.HandleFunc("GET /api/v1/admin/audit", a.apiAdminAudit)
+	mux.HandleFunc("GET /api/v1/admin/mail", a.apiAdminMail)
+	mux.HandleFunc("POST /api/v1/admin/mail/{id}/retry", a.apiAdminRetryMail)
+	mux.HandleFunc("GET /api/v1/admin/stats", a.apiAdminStats)
+
+	mux.HandleFunc("GET /api/v1/admin/servers", a.apiAdminServers)
+	mux.HandleFunc("POST /api/v1/admin/servers", a.apiAdminCreateServer)
+	mux.HandleFunc("POST /api/v1/admin/servers/{id}/status", a.apiAdminServerStatus)
+	mux.HandleFunc("DELETE /api/v1/admin/servers/{id}", a.apiAdminDeleteServer)
+	mux.HandleFunc("GET /api/v1/admin/servers/joins", a.apiAdminServerJoins)
+
+	mux.HandleFunc("GET /textures/{kind}/{uuid}/{hash}", a.texture)
+
 	return limitBody(a.securityHeaders(logRequests(mux)))
 }
 
 func limitBody(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+		// JSON requests are small; the larger limit accommodates 1 MB PNG
+		// skin and cape uploads plus multipart overhead.
+		r.Body = http.MaxBytesReader(w, r.Body, 2<<20)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -368,8 +456,14 @@ func run() error {
 	}
 	defer store.Close()
 
-	pubKeyPEM, err := store.LoadOrCreateSigningKey()
+	signingKey, pubKeyPEM, err := store.LoadOrCreateSigningKeyPair()
 	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Join(cfg.UploadDir, "skins"), 0o755); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Join(cfg.UploadDir, "capes"), 0o755); err != nil {
 		return err
 	}
 	powSecret, err := store.LoadOrCreateSecret("pow_secret", func() (string, error) {
@@ -396,8 +490,12 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	dummyPasswordHash, err := hashPassword(randomToken())
+	if err != nil {
+		return err
+	}
 	app := &App{
-		store: store, cfg: cfg, pubKeyPEM: pubKeyPEM,
+		store: store, cfg: cfg, pubKeyPEM: pubKeyPEM, signingKey: signingKey,
 		powSecret: []byte(powSecret), poW: NewPoW(store, []byte(powSecret), cfg.PowDifficulty),
 		mailer: mailer, turnstile: turnstile, templates: templates,
 		registerHourly: newSlidingWindow(cfg.RegisterPerHour, time.Hour),
@@ -406,10 +504,19 @@ func run() error {
 		loginLimiter:   newSlidingWindow(cfg.LoginPerMinute, time.Minute),
 		powLimiter:     newSlidingWindow(cfg.PowChallengePerMinute, time.Minute),
 		apiLimiter:     newSlidingWindow(cfg.ProfileLookupPerMinute, time.Minute),
+		forgotLimiter:  newSlidingWindow(cfg.ForgotLimitPerMinute, time.Minute),
+		verifyLimiter:  newSlidingWindow(cfg.VerifyLimitPerMinute, time.Minute),
+		refreshLimiter: newSlidingWindow(cfg.RefreshLimitPerMinute, time.Minute),
+
+		dummyPasswordHash: dummyPasswordHash,
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	if app.mailer != nil {
+		go app.mailWorker(ctx)
+	}
 
 	go func() {
 		ticker := time.NewTicker(time.Hour)

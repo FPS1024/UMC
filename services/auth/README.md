@@ -6,49 +6,91 @@ provides a registration website and a Yggdrasil-compatible API for servers that 
 authentication support.
 
 This service is independent from the UMC launcher engine. A community can run it next to UMC or use
-it with another launcher. It is written in Go and stores accounts in PostgreSQL.
+it with another launcher. It is written in Go, stores accounts in PostgreSQL, and is deployed behind
+Nginx in a split Docker environment.
+
+## Architecture
+
+```text
+auth.example.com    → Nginx → auth-api:8080 → PostgreSQL
+account.example.com → Nginx → Vue panel + /api/ proxy → auth-api:8080
+mail.example.com    → Stalwart (optional profile) → SMTP / IMAP / DKIM
+```
+
+Only Nginx publishes ports 80 and 443 for the account stack. The auth API and PostgreSQL stay on
+internal Docker networks. The optional mail profile publishes 25, 465, 993, and 4190, and keeps its
+management UI on loopback. The deployment environment lives in [`deploy/`](./deploy/). Its README
+and the documentation pages cover certificates, environment variables, backup, and mail.
 
 ## What it provides
 
 - Account registration with username and password
 - A stable 32-character Minecraft UUID per account
 - Argon2id password hashing
+- A versioned `/api/v1` account API with short-lived access tokens and rotating refresh tokens
+- Six-digit email verification and password reset codes with a retrying mail outbox
+- An optional self-hosted Stalwart mail profile with SMTP, IMAPS, DKIM, and a management UI
+- `user`, `moderator`, `admin`, and `superadmin` roles
 - Opaque access tokens stored as SHA-256 hashes
 - Yggdrasil `authenticate`, `refresh`, `validate`, `invalidate`, `signout`, and session `join` /
   `hasJoined` endpoints
 - `GET /api/profiles/minecraft` and profile lookup endpoints
+- Minecraft skins and capes with signed `textures` profile properties
+- A game server registry and Yggdrasil join history for administrators
 - Web sessions with HttpOnly cookies and CSRF protection
-- HTTPS through Caddy with automatic certificates
+- HTTPS through Nginx with operator-provided certificates
 - PostgreSQL storage with a persistent Docker volume
-- A persistent RSA signing key for future profile-property signatures
+- A persistent RSA signing key for profile-property signatures
 
 ## Requirements
 
 - A Linux server with Docker and Docker Compose
-- A domain pointing at the server
-- TCP ports 80 and 443 reachable, plus UDP 443 for HTTP/3
-- Outbound access for Caddy's certificate issuance
+- Two DNS names pointing at the server: auth and account
+- A TLS certificate covering both names, or a wildcard certificate
+- TCP ports 80 and 443 reachable
+- For self-hosted mail: a mail hostname, TCP ports 25/465/993, and DNS/PTR control
 
-The Compose stack starts PostgreSQL 17 automatically. For local development outside Docker you need
-Go 1.24+ and a PostgreSQL 17 database.
+For local development outside Docker you need Go 1.24+ and a PostgreSQL 17 database.
 
-## Quick start
+## Deploy
 
 ```sh
+cd services/auth/deploy
 ./scripts/setup.sh
-# Edit AUTH_DOMAIN, POSTGRES_PASSWORD, SERVER_NAME, and BOOTSTRAP_TOKEN in .env
+# Edit AUTH_DOMAIN, ACCOUNT_DOMAIN, POSTGRES_PASSWORD, and BOOTSTRAP_TOKEN in .env
+# Place fullchain.pem and privkey.pem in certs/
+./scripts/build-web.sh
 docker compose up -d --build
 ```
 
-Caddy obtains a certificate automatically. Open:
+Open:
 
 ```text
-https://auth.example.com/
+https://account.example.com/
 ```
 
 Register the first account at `/register`. If `BOOTSTRAP_TOKEN` is set, enter it on the registration
-form. The first account is marked as an administrator and bypasses the invite, CAPTCHA, and email
+form. The first account is marked as a superadmin and bypasses the invite, CAPTCHA, and email
 requirements so the instance can be bootstrapped. Remove `BOOTSTRAP_TOKEN` after setup.
+
+The `account` host serves the Vue user center and admin panel. Build it with
+`deploy/scripts/build-web.sh` before starting the stack. See [`deploy/README.md`](./deploy/README.md)
+for certificates, host Nginx reuse, and verification.
+
+To add self-hosted mail:
+
+```sh
+# Set MAIL_* and SMTP_* in .env, and ensure certs/ covers MAIL_HOSTNAME.
+cd services/auth/deploy
+./scripts/provision-mail.sh
+# Publish mail/dns-records.txt, then set EMAIL_VERIFICATION=required.
+docker compose --profile mail up -d
+docker compose up -d auth-api
+```
+
+The Stalwart management UI stays on loopback; use an SSH tunnel to
+`https://127.0.0.1:8443/admin` (or `http://127.0.0.1:8080/admin` for setup/recovery). See
+[`deploy/README.md`](./deploy/README.md#self-hosted-mail-stalwart).
 
 The Yggdrasil API root is:
 
@@ -73,29 +115,27 @@ java -javaagent:authlib-injector.jar=https://auth.example.com/api/yggdrasil \
 Players register on the website, then sign in through their launcher. The server verifies each
 join through `hasJoined` and receives the account UUID.
 
-## Admin UI
+## User center and admin UI
 
-The first registered account is an administrator. Sign in and open:
+The first registered account is a superadmin. The Vue panel at `https://account.example.com` provides
+the account dashboard, sessions, profile, and an admin area for users, roles, verification,
+password resets, audit, and the mail outbox. Staff see read-only user and audit pages; administrators
+get the mutating actions.
 
-```text
-https://auth.example.com/admin
-```
-
-- **Invite codes** — generate batches, set uses and expiry, copy codes, revoke codes
-- **Users** — inspect accounts and disable non-admin users
-- **Audit log** — recent administrator and registration actions
-- **Dashboard** — current registration, CAPTCHA, and email modes plus recent activity
-
-Invite codes are shown once. Only a SHA-256 hash is stored, so a lost code must be replaced.
-The admin UI uses the same HttpOnly session cookie and CSRF protection as the rest of the site.
+The legacy HTML admin remains at `https://auth.example.com/admin` for invite codes, users, and audit
+logs. Invite codes are shown once; only a SHA-256 hash is stored.
 
 ## Configuration
 
+Deployment settings live in `deploy/.env`. The Compose file maps them to the application
+environment; do not set `PUBLIC_ORIGIN`, `DATABASE_URL`, `COOKIE_SECURE`, or `TRUST_PROXY_HEADERS`
+independently.
+
 | Variable | Default | Meaning |
 |---|---|---|
-| `AUTH_DOMAIN` | required | Public hostname used by Caddy |
+| `AUTH_DOMAIN` | required | Public auth hostname used by Nginx and `PUBLIC_ORIGIN` |
+| `ACCOUNT_DOMAIN` | required | Vue user center and admin panel hostname |
 | `POSTGRES_PASSWORD` | required | PostgreSQL password, also passed to the auth service |
-| `PUBLIC_ORIGIN` | `http://localhost:8080` | Public origin; Compose sets it to `https://${AUTH_DOMAIN}` |
 | `SERVER_NAME` | `UMC Auth` | Name shown in the UI and Yggdrasil metadata |
 | `BOOTSTRAP_TOKEN` | unset | If set, the first account must provide this token |
 | `REGISTRATION_MODE` | `invite` | `invite`, `open`, or `closed` |
@@ -109,21 +149,26 @@ The admin UI uses the same HttpOnly session cookie and CSRF protection as the re
 | `POW_CHALLENGE_LIMIT_PER_MINUTE` | `30` | Proof-of-work challenges per IPv4 address or IPv6 /64 per minute |
 | `PROFILE_LOOKUP_LIMIT_PER_MINUTE` | `60` | Bulk profile lookups per IPv4 address or IPv6 /64 per minute |
 | `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | unset | Required for `CAPTCHA_MODE=turnstile`; browsers must reach Cloudflare |
-| `SMTP_HOST` / `SMTP_PORT` | unset | SMTP server for verification email |
+| `SMTP_HOST` / `SMTP_PORT` | unset / `587` | SMTP server for verification email |
 | `SMTP_USERNAME` / `SMTP_PASSWORD` | unset | SMTP authentication when required |
 | `SMTP_FROM` | unset | Sender address, for example `UMC Auth <no-reply@example.com>` |
-| `SMTP_TLS` | `starttls` | `starttls`, `implicit`, or `none` |
-| `ALLOW_INSECURE_HTTP` | `false` | Allow an `http://` PUBLIC_ORIGIN for local development only |
-| `COOKIE_SECURE` | true for HTTPS | Mark session cookies as `Secure` |
+| `SMTP_TLS` | `starttls` | `starttls`, `implicit`, or `none`; Stalwart uses `implicit` on 465 |
+| `MAIL_DOMAIN` | unset | Email domain for the Stalwart profile, for example `example.com` |
+| `MAIL_HOSTNAME` | unset | Mail server hostname and Docker alias, for example `mail.example.com` |
+| `MAIL_ADMIN_PASSWORD` | unset | Bootstrap password for `provision-mail.sh` |
+| `MAIL_NO_REPLY_ADDRESS` | unset | Sender account, for example `no-reply@example.com` |
+| `MAIL_NO_REPLY_PASSWORD` | unset | SMTP password for the no-reply account; keep equal to `SMTP_PASSWORD` |
 | `SESSION_DAYS` | `30` | Web session lifetime |
 | `TOKEN_DAYS` | `30` | Yggdrasil access-token lifetime |
-| `DATABASE_URL` | local PostgreSQL DSN | PostgreSQL connection string |
-| `PGPASSWORD` | from Compose | PostgreSQL password when not embedded in `DATABASE_URL` |
-| `BIND_ADDR` | `0.0.0.0:8080` | Listen address inside the container |
-| `TRUST_PROXY_HEADERS` | `false` | Trust `X-Forwarded-For` (Compose sets `true`) |
+| `ACCESS_TOKEN_MINUTES` | `15` | `/api/v1` access-token lifetime |
+| `REFRESH_TOKEN_DAYS` | `30` | `/api/v1` refresh-token lifetime |
+| `FORGOT_LIMIT_PER_MINUTE` | `5` | Password reset requests per address |
+| `VERIFY_LIMIT_PER_MINUTE` | `10` | Email verification and resend requests |
+| `REFRESH_LIMIT_PER_MINUTE` | `60` | Access-token refresh requests |
+| `UPLOAD_DIR` | `/data/uploads` in Compose | Skin and cape storage; the `auth-uploads` volume is mounted at `/data` |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` |
 
-Compose passes a keyword DSN and `PGPASSWORD`, so the password does not need URL escaping.
+The service also accepts `BIND_ADDR` and `DATABASE_URL` directly when run outside Compose.
 
 ## Security notes
 
@@ -131,9 +176,9 @@ Compose passes a keyword DSN and `PGPASSWORD`, so the password does not need URL
   `turnstile` is usually invisible but depends on the browser reaching Cloudflare, which may be
   unreliable on some networks. Turnstile tokens are browser-only; API clients should use an invite
   code or `pow`.
-- **HTTPS is required.** Caddy terminates TLS, redirects HTTP, and sets HSTS. Do not publish the
-  `auth` container port directly. The service refuses to start with an `http://` PUBLIC_ORIGIN
-  unless `ALLOW_INSECURE_HTTP=true` is set for local development.
+- **HTTPS is required.** Nginx terminates TLS, redirects HTTP, sets HSTS, and keeps the auth
+  container port private. Do not publish the `auth-api` port directly. The service refuses to start
+  with an `http://` PUBLIC_ORIGIN unless `ALLOW_INSECURE_HTTP=true` is set for local development.
 - Passwords are hashed with Argon2id; access tokens and web session tokens are stored only as
   SHA-256 hashes.
 - Session and CSRF cookies are HttpOnly and SameSite=Lax. CSRF tokens protect registration, login,
@@ -141,9 +186,45 @@ Compose passes a keyword DSN and `PGPASSWORD`, so the password does not need URL
 - Responses include `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
   `Permissions-Policy`, and a restrictive Content-Security-Policy.
 - The auth container runs as UID 10001 with `no-new-privileges` and a read-only root filesystem.
-  Only PostgreSQL has persistent storage.
+  PostgreSQL and the `auth-uploads` texture volume are the persistent stores.
+- Uploads are validated as PNGs with fixed skin/cape dimensions and a 1 MB per-file limit.
 - Back up the `auth-db` volume. It contains password hashes, token hashes, and the RSA private key
-  used for future profile-property signatures; treat it as sensitive.
+  used to sign profile `textures` properties; treat it and `auth-uploads` as sensitive.
+
+## Account API v1
+
+The JSON account API for the Vue panel, launchers, and admin clients lives under `/api/v1`:
+
+```text
+POST /api/v1/auth/register
+POST /api/v1/auth/verify-email
+POST /api/v1/auth/verify-email/resend
+POST /api/v1/auth/login
+POST /api/v1/auth/refresh
+POST /api/v1/auth/logout
+POST /api/v1/auth/password/forgot
+POST /api/v1/auth/password/reset
+GET  /api/v1/users/me
+GET  /api/v1/users/me/sessions
+DELETE /api/v1/users/me/sessions/{id}
+GET  /api/v1/users/me/minecraft
+POST /api/v1/users/me/skin
+DELETE /api/v1/users/me/skin
+POST /api/v1/users/me/cape
+DELETE /api/v1/users/me/cape
+GET  /api/v1/profiles/{uuid}
+GET  /api/v1/profiles/by-username/{name}
+GET  /textures/{skin|cape}/{uuid}/{sha256}
+```
+
+Admin endpoints under `/api/v1/admin/` cover user search, status, roles, manual verification,
+password reset, audit search, the mail outbox, game servers, join history, and statistics. The
+canonical contract and OpenAPI document are in [`protocols/auth-v1.md`](../../protocols/auth-v1.md)
+and [`protocols/auth-v1.yaml`](../../protocols/auth-v1.yaml).
+
+Access tokens default to 15 minutes. Refresh tokens default to 30 days, rotate on every use, and
+revoke the whole session family when reused. Web clients receive the refresh token as an HttpOnly
+cookie; other clients receive it in JSON.
 
 ## API surface
 
@@ -190,21 +271,43 @@ GET /healthz
 
 ## Data and backup
 
-Accounts live in the `auth-db` PostgreSQL volume. Back up with `pg_dump`:
+Accounts and Minecraft profiles live in the `auth-db` PostgreSQL volume. Uploaded skins and capes
+live in the `auth-uploads` volume. From `services/auth/deploy`, back up the database with `pg_dump`
+while the API is stopped:
 
 ```sh
-docker compose stop auth
+docker compose stop auth-api
 docker compose exec -T db pg_dump -U umc_auth -d umc_auth -Fc > umc-auth.dump
-docker compose start auth
+docker run --rm -v umc-auth_auth-uploads:/data -v "$PWD":/backup \
+  alpine tar czf /backup/auth-uploads.tar.gz -C /data .
+docker compose start auth-api
 ```
+
+Check `docker volume ls` if the Compose project name is not `umc-auth`.
 
 Restore:
 
 ```sh
-docker compose stop auth
+docker compose stop auth-api
 docker compose exec -T db pg_restore -U umc_auth -d umc_auth --clean --if-exists < umc-auth.dump
-docker compose start auth
+docker compose start auth-api
 ```
+
+TLS files in `deploy/certs` are also operator state. Back them up, or keep the certificate issuance
+process reproducible.
+
+## Deployment check
+
+From `services/auth`:
+
+```sh
+AUTH_DOMAIN=auth.example.com ACCOUNT_DOMAIN=account.example.com ./scripts/check-deployment.sh
+```
+
+It verifies HTTP-to-HTTPS redirects, certificate trust and expiry, HSTS, CSP, the health endpoint,
+JSON metadata, the Secure cookie flag, that the auth port is not exposed directly, and, when
+`ACCOUNT_DOMAIN` is set, the Vue panel headers, API proxy, and SPA deep-link fallback. Run it from a
+machine that can resolve the domain.
 
 ## Development
 
@@ -236,15 +339,6 @@ Tests:
 ./scripts/check.sh
 ```
 
-Deployment check (requires the public domain and ports 80/443):
-
-```sh
-AUTH_DOMAIN=auth.example.com ./scripts/check-deployment.sh
-```
-
-It verifies HTTP-to-HTTPS redirects, certificate trust and expiry, HSTS, CSP, the health endpoint,
-JSON metadata, the Secure cookie flag, and that the auth port is not exposed directly.
-
 The PostgreSQL integration test runs when `TEST_DATABASE_URL` is set:
 
 ```sh
@@ -254,14 +348,14 @@ PGPASSWORD=devpassword go test -run TestStoreIntegration ./...
 
 ## Current limitations
 
-- Email verification is optional, but password reset and account recovery are not implemented.
-- No skin upload or texture signing; profiles expose an empty `properties` array.
-- The admin UI covers invites, users, and audit logs; it does not include email resend or password
-  reset.
-- Schema creation uses idempotent `CREATE TABLE IF NOT EXISTS` statements; a dedicated migration
-  system is not included yet.
+- Email verification is optional. The API supports password reset and resend; the legacy HTML admin
+  UI does not expose them yet.
+- No email change or self-service account deletion.
+- The Vue panel covers the user center and admin workflows, including skins, capes, servers, and
+  join history. The legacy HTML admin still covers invite codes, users, and audit logs.
 - Rate limiting is in-process per auth container. If you run multiple replicas, add a shared limiter
   or edge proxy.
-- No email resend endpoint; an expired verification link cannot be regenerated through the UI.
-- Caddy expects ports 80/443. If another reverse proxy terminates TLS, run the `auth` service
-  directly, set `COOKIE_SECURE=true`, and forward `X-Forwarded-For` and `X-Forwarded-Proto`.
+- Self-hosted mail is implemented and locally tested; external delivery still needs real DNS and PTR
+  records, and some VPS providers block outbound TCP 25.
+- The UMC launcher's Microsoft sign-in route is separate; this service does not implement
+  client-side third-party authentication.

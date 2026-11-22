@@ -41,10 +41,6 @@ func NewMailer(cfg SMTPConfig) (*Mailer, error) {
 }
 
 func (m *Mailer) SendVerification(to, username, link string, validHours int) error {
-	recipient, err := mail.ParseAddress(to)
-	if err != nil {
-		return fmt.Errorf("invalid recipient: %w", err)
-	}
 	subject := "Verify your UMC Auth account"
 	body := fmt.Sprintf(
 		"Hello %s,\r\n\r\n"+
@@ -52,6 +48,14 @@ func (m *Mailer) SendVerification(to, username, link string, validHours int) err
 			"If you did not request this account, ignore this message.\r\n",
 		username, validHours, link,
 	)
+	return m.Send(to, subject, body)
+}
+
+func (m *Mailer) Send(to, subject, body string) error {
+	recipient, err := mail.ParseAddress(to)
+	if err != nil {
+		return fmt.Errorf("invalid recipient: %w", err)
+	}
 	message := strings.Join([]string{
 		"From: " + m.from.String(),
 		"To: " + recipient.String(),

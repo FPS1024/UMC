@@ -217,7 +217,7 @@ func (a *App) adminUserStatus(w http.ResponseWriter, r *http.Request) {
 		a.webError(w, r, http.StatusForbidden, "Administrators cannot be disabled here")
 		return
 	}
-	if err := a.store.SetUserDisabled(id, disabled); err != nil {
+	if err := a.store.SetUserDisabled(id, disabled, time.Now().Unix()); err != nil {
 		a.webError(w, r, http.StatusInternalServerError, "Could not update the user")
 		return
 	}

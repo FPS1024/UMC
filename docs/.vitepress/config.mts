@@ -85,6 +85,7 @@ const englishSidebar = {
       items: [
         { text: 'Overview', link: '/en/services/' },
         { text: 'UMC Auth', link: '/en/services/auth' },
+        { text: 'Auth deployment', link: '/en/services/auth-deployment' },
         { text: 'Java game server', link: '/en/services/java-server' },
         { text: 'Mirror', link: '/en/services/mirror' },
       ],
@@ -106,6 +107,7 @@ const englishSidebar = {
       text: 'Reference',
       items: [
         { text: 'JSON-RPC v1', link: '/en/reference/rpc-v1' },
+        { text: 'Auth API v1', link: '/en/reference/auth-v1' },
       ],
     },
     {
@@ -160,6 +162,7 @@ const chineseSidebar = {
       items: [
         { text: '概览', link: '/zh/services/' },
         { text: 'UMC Auth', link: '/zh/services/auth' },
+        { text: '认证部署环境', link: '/zh/services/auth-deployment' },
         { text: 'Java 版服务器', link: '/zh/services/java-server' },
         { text: '镜像站', link: '/zh/services/mirror' },
       ],
@@ -181,6 +184,7 @@ const chineseSidebar = {
       text: '参考',
       items: [
         { text: 'JSON-RPC v1', link: '/zh/reference/rpc-v1' },
+        { text: 'Auth API v1', link: '/zh/reference/auth-v1' },
       ],
     },
     {

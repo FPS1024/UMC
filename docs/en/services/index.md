@@ -9,7 +9,7 @@ not packaged yet.
 
 | Service | Status | Purpose |
 |---|---|---|
-| [UMC Auth](./auth) | Initial implementation | Account registration and Yggdrasil-compatible authentication |
+| [UMC Auth](./auth) | Account system implemented | Account API, Vue user center/admin panel, optional Stalwart mail, and Yggdrasil-compatible authentication |
 | [Java Edition server](./java-server) | Planned | Dockerized Minecraft: Java Edition server |
 | [Mirror](./mirror) | Initial implementation | HTTPS-only Go cache with SHA-1 verification for configured upstream objects |
 
@@ -30,5 +30,9 @@ not packaged yet.
 - Run **Mirror** if players in your community have slow or unreliable access to Mojang download
   hosts.
 
-The [UMC Auth guide](./auth) covers deployment, the admin UI, invites, optional email verification,
-Turnstile, proof-of-work, rate limits, and the HTTPS deployment check.
+UMC Auth is deployed behind Nginx as three containers: the Go auth API, PostgreSQL, and the reverse
+proxy. Its `/api/v1` account API, Yggdrasil endpoints, session model, email codes, password reset,
+admin API, optional self-hosted Stalwart mail profile, and Vue user center/admin panel are
+implemented. The
+[UMC Auth guide](./auth) covers the service; the [deployment environment](./auth-deployment) covers
+the architecture, environment variables, data model, mail plan, and resource budget.

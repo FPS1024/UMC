@@ -6,6 +6,12 @@ AUTH_DOMAIN="${AUTH_DOMAIN#http://}"
 AUTH_DOMAIN="${AUTH_DOMAIN#https://}"
 AUTH_DOMAIN="${AUTH_DOMAIN%%/*}"
 BASE="https://${AUTH_DOMAIN}"
+ACCOUNT_DOMAIN="${ACCOUNT_DOMAIN:-}"
+if [ -n "$ACCOUNT_DOMAIN" ]; then
+	ACCOUNT_DOMAIN="${ACCOUNT_DOMAIN#http://}"
+	ACCOUNT_DOMAIN="${ACCOUNT_DOMAIN#https://}"
+	ACCOUNT_DOMAIN="${ACCOUNT_DOMAIN%%/*}"
+fi
 
 fail() {
 	echo "FAIL: $*" >&2
@@ -67,8 +73,27 @@ else
 fi
 
 if timeout 3 bash -c "</dev/tcp/${AUTH_DOMAIN}/8080" 2>/dev/null; then
-	fail "port 8080 is directly reachable; expose only Caddy"
+	fail "port 8080 is directly reachable; expose only Nginx"
 fi
 pass "auth port is not exposed"
+
+if [ -n "$ACCOUNT_DOMAIN" ]; then
+	ACCOUNT_BASE="https://${ACCOUNT_DOMAIN}"
+	headers="$(curl -fsSI "${ACCOUNT_BASE}/")" || fail "account panel is not reachable"
+	echo "$headers" | grep -qi '^content-security-policy:' ||
+		fail "account panel is missing Content-Security-Policy"
+	echo "$headers" | grep -qi '^strict-transport-security:' ||
+		fail "account panel is missing HSTS"
+	pass "account panel headers"
+
+	curl -fsS "${ACCOUNT_BASE}/api/v1/meta" | grep -q '"server_name"' ||
+		fail "account panel API proxy did not return metadata"
+	pass "account panel API proxy"
+
+	deep_code="$(curl -sS -o /dev/null -w '%{http_code}' "${ACCOUNT_BASE}/admin/users")"
+	[ "$deep_code" = "200" ] ||
+		fail "SPA deep link did not return 200 (status ${deep_code})"
+	pass "SPA deep link"
+fi
 
 echo "All deployment checks passed for ${BASE}"

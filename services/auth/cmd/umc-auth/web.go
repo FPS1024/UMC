@@ -236,6 +236,14 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 		a.webError(w, r, http.StatusInternalServerError, "Could not create the account")
 		return
 	}
+	if firstUser {
+		if err := a.store.SetUserRole(userID, "superadmin", now.Unix()); err != nil {
+			_ = a.store.DeleteUser(userID)
+			releaseInvite()
+			a.webError(w, r, http.StatusInternalServerError, "Could not initialize the administrator")
+			return
+		}
+	}
 
 	if requireEmail {
 		token := randomToken()

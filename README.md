@@ -122,20 +122,22 @@ UMC also ships independently deployable services under [`services/`](services/):
 
 | Service | Status | Purpose |
 |---|---|---|
-| [Auth server](services/auth/) | Initial implementation | Self-hosted Go/PostgreSQL registration and Yggdrasil-compatible authentication for Minecraft communities |
+| [Auth server](services/auth/) | Account system implemented | Self-hosted Go/Nginx/PostgreSQL accounts with `/api/v1`, a Vue panel, optional Stalwart mail, and Yggdrasil-compatible authentication |
 | Java Edition server | Planned | Dockerized Minecraft: Java Edition server |
 | Mirror | Initial implementation | HTTPS-only Go cache with SHA-1 verification for configured upstream objects |
 
-The Auth and Mirror services currently have Docker Compose deployments. The Java Edition server is
-planned and is not packaged yet. All companion services are optional; `umc` and `umcd` do not
-require them. UMC Auth is a community-operated Yggdrasil-compatible account service, separate from
-the launcher's Microsoft sign-in and ownership checks.
+The Auth and Mirror services currently have Docker Compose deployments. Auth runs behind Nginx with
+a private Go API and PostgreSQL; an optional Stalwart mail profile and a Vue user center/admin panel
+are included. The Java
+Edition server is planned and is not packaged yet. All companion services are optional; `umc` and
+`umcd` do not require them. UMC Auth is a community-operated Yggdrasil-compatible account service,
+separate from the launcher's Microsoft sign-in and ownership checks.
 
 ## Documentation
 
 | User documentation | Developer documentation | Reference |
 |---|---|---|
-| [User guide](https://fps1024.github.io/UMC/en/guide/user-guide)<br />[Quickstart](https://fps1024.github.io/UMC/en/guide/quickstart)<br />[CLI reference](https://fps1024.github.io/UMC/en/guide/cli)<br />[Instances](https://fps1024.github.io/UMC/en/guide/instances)<br />[Java runtimes](https://fps1024.github.io/UMC/en/guide/java)<br />[Launching](https://fps1024.github.io/UMC/en/guide/launching)<br />[Troubleshooting](https://fps1024.github.io/UMC/en/guide/troubleshooting) | [Integration guide](https://fps1024.github.io/UMC/en/development/)<br />[Rust SDK](https://fps1024.github.io/UMC/en/development/sdk)<br />[Architecture](https://fps1024.github.io/UMC/en/development/architecture)<br />[Loader adapters](https://fps1024.github.io/UMC/en/development/loaders)<br />[JSON-RPC client guide](https://fps1024.github.io/UMC/en/development/rpc-client)<br />[Testing and CI](https://fps1024.github.io/UMC/en/development/testing)<br />[Contributing](https://fps1024.github.io/UMC/en/development/contributing) | [JSON-RPC v1](https://fps1024.github.io/UMC/en/reference/rpc-v1)<br />[Compatibility policy](https://fps1024.github.io/UMC/en/about/compatibility)<br />[Privacy Policy](https://fps1024.github.io/UMC/en/about/privacy)<br />[Terms of Service](https://fps1024.github.io/UMC/en/about/terms)<br />[v0.1.0 release notes](https://fps1024.github.io/UMC/en/reference/releases/v0.1.0) |
+| [User guide](https://fps1024.github.io/UMC/en/guide/user-guide)<br />[Quickstart](https://fps1024.github.io/UMC/en/guide/quickstart)<br />[CLI reference](https://fps1024.github.io/UMC/en/guide/cli)<br />[Instances](https://fps1024.github.io/UMC/en/guide/instances)<br />[Java runtimes](https://fps1024.github.io/UMC/en/guide/java)<br />[Launching](https://fps1024.github.io/UMC/en/guide/launching)<br />[Troubleshooting](https://fps1024.github.io/UMC/en/guide/troubleshooting) | [Integration guide](https://fps1024.github.io/UMC/en/development/)<br />[Rust SDK](https://fps1024.github.io/UMC/en/development/sdk)<br />[Architecture](https://fps1024.github.io/UMC/en/development/architecture)<br />[Loader adapters](https://fps1024.github.io/UMC/en/development/loaders)<br />[JSON-RPC client guide](https://fps1024.github.io/UMC/en/development/rpc-client)<br />[Testing and CI](https://fps1024.github.io/UMC/en/development/testing)<br />[Contributing](https://fps1024.github.io/UMC/en/development/contributing) | [JSON-RPC v1](https://fps1024.github.io/UMC/en/reference/rpc-v1)<br />[Auth API v1](https://fps1024.github.io/UMC/en/reference/auth-v1)<br />[Compatibility policy](https://fps1024.github.io/UMC/en/about/compatibility)<br />[Privacy Policy](https://fps1024.github.io/UMC/en/about/privacy)<br />[Terms of Service](https://fps1024.github.io/UMC/en/about/terms)<br />[v0.1.0 release notes](https://fps1024.github.io/UMC/en/reference/releases/v0.1.0) |
 
 The documentation is available in [English](https://fps1024.github.io/UMC/en/) and
 [简体中文](https://fps1024.github.io/UMC/zh/).
@@ -167,7 +169,7 @@ crates/
 docs/
   en/                English documentation source
   zh/                Chinese translations
-protocols/           canonical JSON-RPC documentation
+protocols/           canonical contracts: JSON-RPC and Auth API v1
 scripts/             documentation sync and i18n helpers
 ```
 
