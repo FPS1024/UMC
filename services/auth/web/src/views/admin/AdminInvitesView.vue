@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { api } from '../../api'
 import { copyText, formatDate } from '../../format'
+import { t } from '../../i18n'
 import { notify } from '../../toast'
 import AdminNav from '../../components/AdminNav.vue'
 
@@ -43,7 +44,7 @@ async function create() {
     })
     invites.value = data?.invites || []
     newCodes.value = data?.codes || []
-    notify(`${newCodes.value.length} invite code(s) created.`, 'success')
+    notify(t('{count} invite code(s) created.', { count: newCodes.value.length }), 'success')
   } catch (err) {
     notify(err.message, 'error')
   } finally {
@@ -52,14 +53,14 @@ async function create() {
 }
 
 async function revoke(invite) {
-  if (!window.confirm(`Revoke invite ${invite.code_prefix}?`)) return
+  if (!window.confirm(t('Revoke invite {prefix}?', { prefix: invite.code_prefix }))) return
   busy.value = `invite:${invite.id}`
   try {
     await api.admin.revokeInvite(invite.id)
     invites.value = invites.value.map((item) =>
       item.id === invite.id ? { ...item, status: 'revoked' } : item,
     )
-    notify('Invite revoked.', 'success')
+    notify(t('Invite revoked.'), 'success')
   } catch (err) {
     notify(err.message, 'error')
   } finally {
@@ -70,9 +71,9 @@ async function revoke(invite) {
 async function copy(value, label = 'Invite code') {
   try {
     await copyText(value)
-    notify(`${label} copied`, 'success', 2200)
+    notify(t('{label} copied', { label: t(label) }), 'success', 2200)
   } catch {
-    notify('Could not copy to the clipboard', 'error')
+    notify(t('Could not copy to the clipboard'), 'error')
   }
 }
 
@@ -89,79 +90,86 @@ onMounted(load)
     <AdminNav />
     <section class="page-heading">
       <div>
-        <p class="eyebrow">Administration</p>
-        <h1>Invite codes</h1>
+        <p class="eyebrow">{{ t('Administration') }}</p>
+        <h1>{{ t('Invite codes') }}</h1>
         <p class="muted">
-          Create registration invites for invite-only mode. Full codes are shown once after creation.
+          {{ t('Create registration invites for invite-only mode. Full codes are shown once after creation.') }}
         </p>
       </div>
       <div class="heading-actions">
         <button class="btn btn-secondary btn-sm" type="button" :disabled="loading" @click="load">
-          Refresh
+          {{ t('Refresh') }}
         </button>
       </div>
     </section>
 
     <div v-if="newCodes.length" class="alert alert-warning generated-panel">
       <div>
-        <strong>New invite codes</strong>
-        <span class="muted small">Shown once. Copy them now.</span>
+        <strong>{{ t('New invite codes') }}</strong>
+        <span class="muted small">{{ t('Shown once. Copy them now.') }}</span>
         <div class="codes">
           <code v-for="code in newCodes" :key="code">{{ code }}</code>
         </div>
       </div>
       <div class="generated-actions">
-        <button class="btn btn-secondary btn-sm" type="button" @click="copyAll">Copy all</button>
-        <button class="btn btn-ghost btn-sm" type="button" @click="newCodes = []">Dismiss</button>
+        <button class="btn btn-secondary btn-sm" type="button" @click="copyAll">
+          {{ t('Copy all') }}
+        </button>
+        <button class="btn btn-ghost btn-sm" type="button" @click="newCodes = []">
+          {{ t('Dismiss') }}
+        </button>
       </div>
     </div>
 
     <div v-if="error" class="alert alert-error">{{ error }}</div>
 
     <section class="card">
-      <h2>Create invites</h2>
+      <h2>{{ t('Create invites') }}</h2>
       <form class="form-grid" @submit.prevent="create">
         <label class="field">
-          <span>Count</span>
+          <span>{{ t('Count') }}</span>
           <input v-model.number="form.count" type="number" min="1" max="50" required />
-          <small>1–50 codes per batch.</small>
+          <small>{{ t('1–50 codes per batch.') }}</small>
         </label>
         <label class="field">
-          <span>Uses per code</span>
+          <span>{{ t('Uses per code') }}</span>
           <input v-model.number="form.uses" type="number" min="1" max="100" required />
         </label>
         <label class="field">
-          <span>Valid for days</span>
+          <span>{{ t('Valid for days') }}</span>
           <input v-model.number="form.days" type="number" min="1" max="365" required />
         </label>
         <label class="field">
-          <span>Note</span>
-          <input v-model="form.note" maxlength="200" placeholder="Optional batch note" />
+          <span>{{ t('Note') }}</span>
+          <input v-model="form.note" maxlength="200" :placeholder="t('Optional batch note')" />
         </label>
         <div class="card-actions" style="grid-column: 1 / -1; margin-top: 0">
           <button class="btn btn-primary btn-sm" type="submit" :disabled="busy === 'create'">
-            {{ busy === 'create' ? 'Creating…' : 'Create invites' }}
+            {{ busy === 'create' ? t('Creating…') : t('Create invites') }}
           </button>
         </div>
       </form>
     </section>
 
     <section class="card table-card">
-      <h2>Recent invites</h2>
+      <h2>{{ t('Recent invites') }}</h2>
       <div v-if="loading" class="loading-row">
-        <span class="spinner spinner-sm" aria-hidden="true"></span> Loading invites…
+        <span class="spinner spinner-sm" aria-hidden="true"></span>
+        {{ t('Loading invites…') }}
       </div>
-      <div v-else-if="invites.length === 0" class="empty-state">No invite codes yet.</div>
+      <div v-else-if="invites.length === 0" class="empty-state">
+        {{ t('No invite codes yet.') }}
+      </div>
       <div v-else class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Code</th>
-              <th>Note</th>
-              <th>Uses</th>
-              <th>Expires</th>
-              <th>Status</th>
-              <th class="cell-actions">Actions</th>
+              <th>{{ t('Code') }}</th>
+              <th>{{ t('Note') }}</th>
+              <th>{{ t('Uses') }}</th>
+              <th>{{ t('Expires') }}</th>
+              <th>{{ t('Status') }}</th>
+              <th class="cell-actions">{{ t('Actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -172,7 +180,7 @@ onMounted(load)
               <td class="nowrap">{{ formatDate(invite.expires_at) }}</td>
               <td>
                 <span class="badge" :class="statusClass[invite.status] || 'badge-warning'">
-                  {{ invite.status }}
+                  {{ t(invite.status) }}
                 </span>
               </td>
               <td class="cell-actions">
@@ -183,7 +191,7 @@ onMounted(load)
                     :disabled="busy === `invite:${invite.id}`"
                     @click="revoke(invite)"
                   >
-                    Revoke
+                    {{ t('Revoke') }}
                   </button>
                 </div>
                 <span v-else class="muted small">—</span>

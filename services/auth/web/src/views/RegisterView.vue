@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { ApiError, api, registerChallenge } from '../api'
 import { setSession } from '../auth'
 import { config, loadMeta } from '../config'
+import { t } from '../i18n'
 
 const router = useRouter()
 
@@ -42,7 +43,7 @@ function loadTurnstile() {
     script.async = true
     script.defer = true
     script.onload = () => resolve(window.turnstile)
-    script.onerror = () => reject(new Error('Could not load Cloudflare Turnstile'))
+    script.onerror = () => reject(new Error(t('Could not load Cloudflare Turnstile')))
     document.head.appendChild(script)
   })
   return turnstilePromise
@@ -62,7 +63,7 @@ function hasLeadingZeroBits(bytes, bits) {
 
 async function solveProofOfWork(challenge, difficulty) {
   if (!window.crypto?.subtle) {
-    throw new Error('Proof-of-work requires a secure browser context')
+    throw new Error(t('Proof-of-work requires a secure browser context'))
   }
   const encoder = new TextEncoder()
   for (let nonce = 0; ; nonce += 1) {
@@ -81,16 +82,16 @@ async function solveProofOfWork(challenge, difficulty) {
 
 function validate() {
   if (!/^[A-Za-z0-9_]{3,16}$/.test(form.username)) {
-    return 'Username must be 3–16 characters using letters, digits, or underscores.'
+    return t('Username must be 3–16 characters using letters, digits, or underscores.')
   }
   if (form.password.length < 8 || form.password.length > 128) {
-    return 'Password must be 8–128 characters.'
+    return t('Password must be 8–128 characters.')
   }
   if (form.password !== form.confirm) {
-    return 'Passwords do not match.'
+    return t('Passwords do not match.')
   }
   if (!form.email.includes('@')) {
-    return 'Enter a valid email address.'
+    return t('Enter a valid email address.')
   }
   return ''
 }
@@ -104,7 +105,7 @@ async function submit() {
   }
   const captcha = captchaMode.value
   if (!firstAccount.value && captcha === 'turnstile' && !form.turnstileToken) {
-    error.value = 'Complete the Cloudflare Turnstile challenge.'
+    error.value = t('Complete the Cloudflare Turnstile challenge.')
     return
   }
 
@@ -143,17 +144,17 @@ async function submit() {
     router.push('/')
   } catch (err) {
     if (err instanceof ApiError && err.code === 'registration_conflict') {
-      error.value = 'That username or email is already registered.'
+      error.value = t('That username or email is already registered.')
     } else if (err.code === 'invite_required' || err.code === 'invalid_invite') {
-      error.value = 'The invite code is missing, invalid, or expired.'
+      error.value = t('The invite code is missing, invalid, or expired.')
     } else if (err.code === 'bootstrap_required') {
-      error.value = 'The bootstrap token is invalid.'
+      error.value = t('The bootstrap token is invalid.')
     } else if (err.code === 'captcha_failed') {
-      error.value = 'CAPTCHA verification failed. Try again.'
+      error.value = t('CAPTCHA verification failed. Try again.')
     } else if (err.code === 'registration_closed') {
-      error.value = 'Registration is closed on this server.'
+      error.value = t('Registration is closed on this server.')
     } else if (err.code === 'email_unavailable') {
-      error.value = 'Email delivery is not configured. Contact the server operator.'
+      error.value = t('Email delivery is not configured. Contact the server operator.')
     } else {
       error.value = err.message
     }
@@ -196,57 +197,58 @@ onMounted(async () => {
   <div class="auth-wrap auth-wrap-wide">
     <section class="auth-card">
       <div class="auth-heading">
-        <h1>Create account</h1>
-        <p>Enter your details to get started.</p>
+        <h1>{{ t('Create account') }}</h1>
+        <p>{{ t('Enter your details to get started.') }}</p>
       </div>
 
       <div v-if="config.error" class="alert alert-error">{{ config.error }}</div>
       <div v-if="!registrationOpen" class="alert alert-warning">
-        Registration is closed. Ask an administrator for an account.
+        {{ t('Registration is closed. Ask an administrator for an account.') }}
       </div>
       <div v-if="firstAccount" class="alert alert-info">
-        This is the first account. It becomes the <strong>superadmin</strong> and is verified
-        immediately.
+        {{ t('This is the first account. It becomes the') }}
+        <strong>{{ t('superadmin') }}</strong>
+        {{ t('and is verified immediately.') }}
       </div>
 
       <form v-if="registrationOpen" class="form-stack" @submit.prevent="submit">
         <label class="field">
-          <span>Username</span>
+          <span>{{ t('Username') }}</span>
           <input
             v-model.trim="form.username"
             autocomplete="username"
-            placeholder="username"
+            :placeholder="t('username')"
             minlength="3"
             maxlength="16"
             pattern="[A-Za-z0-9_]+"
             required
             @input="error = ''"
           />
-          <small>3–16 letters, digits, or underscores.</small>
+          <small>{{ t('3–16 letters, digits, or underscores.') }}</small>
         </label>
 
         <label class="field">
-          <span>Email</span>
+          <span>{{ t('Email') }}</span>
           <input
             v-model.trim="form.email"
             type="email"
             autocomplete="email"
-            placeholder="name@example.com"
+            :placeholder="t('name@example.com')"
             required
             @input="error = ''"
           />
           <small v-if="meta?.email_verification === 'required'">
-            We will send a six-digit verification code.
+            {{ t('We will send a six-digit verification code.') }}
           </small>
         </label>
 
         <label class="field">
-          <span>Password</span>
+          <span>{{ t('Password') }}</span>
           <input
             v-model="form.password"
             type="password"
             autocomplete="new-password"
-            placeholder="At least 8 characters"
+            :placeholder="t('At least 8 characters')"
             minlength="8"
             maxlength="128"
             required
@@ -255,19 +257,19 @@ onMounted(async () => {
         </label>
 
         <label class="field">
-          <span>Confirm password</span>
+          <span>{{ t('Confirm password') }}</span>
           <input
             v-model="form.confirm"
             type="password"
             autocomplete="new-password"
-            placeholder="Re-enter your password"
+            :placeholder="t('Re-enter your password')"
             required
             @input="error = ''"
           />
         </label>
 
         <label v-if="showInvite" class="field">
-          <span>Invite code</span>
+          <span>{{ t('Invite code') }}</span>
           <input
             v-model.trim="form.inviteCode"
             autocomplete="off"
@@ -277,40 +279,39 @@ onMounted(async () => {
         </label>
 
         <label v-if="bootstrapRequired" class="field">
-          <span>Bootstrap token</span>
+          <span>{{ t('Bootstrap token') }}</span>
           <input
             v-model="form.bootstrapToken"
             type="password"
             autocomplete="off"
             required
           />
-          <small>Only needed while the instance has no accounts.</small>
+          <small>{{ t('Only needed while the instance has no accounts.') }}</small>
         </label>
 
         <div v-if="!firstAccount && captchaMode === 'pow'" class="alert alert-info">
-          This server protects registration with proof-of-work. Your browser solves a short
-          challenge when you submit the form.
+          {{ t('This server protects registration with proof-of-work. Your browser solves a short challenge when you submit the form.') }}
         </div>
         <div v-if="!firstAccount && captchaMode === 'turnstile'" class="field">
-          <span>Human check</span>
+          <span>{{ t('Human check') }}</span>
           <div ref="turnstileContainer" class="turnstile-slot"></div>
           <small v-if="captchaError" class="field-error">{{ captchaError }}</small>
         </div>
 
         <button class="btn btn-primary btn-block" type="submit" :disabled="loading || solving">
-          {{ loading ? 'Creating account…' : 'Create account' }}
+          {{ loading ? t('Creating account…') : t('Create account') }}
         </button>
 
         <div v-if="error" class="message error">{{ error }}</div>
         <div v-if="solving" class="message">
           <span class="spinner spinner-sm" aria-hidden="true"></span>
-          Solving the proof-of-work challenge…
+          {{ t('Solving the proof-of-work challenge…') }}
         </div>
       </form>
 
       <div class="auth-footer">
-        Already have an account?
-        <RouterLink to="/login">Sign in</RouterLink>
+        {{ t('Already have an account?') }}
+        <RouterLink to="/login">{{ t('Sign in') }}</RouterLink>
       </div>
     </section>
   </div>

@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '../api'
+import { t } from '../i18n'
 
 const router = useRouter()
 const email = ref('')
@@ -17,7 +18,7 @@ async function submit() {
     accepted.value = true
   } catch (err) {
     if (err.code === 'email_unavailable') {
-      error.value = 'Email delivery is not configured. Contact the server operator.'
+      error.value = t('Email delivery is not configured. Contact the server operator.')
     } else {
       error.value = err.message
     }
@@ -35,34 +36,34 @@ function continueToReset() {
   <div class="auth-wrap">
     <section class="auth-card">
       <div class="auth-heading">
-        <p class="eyebrow">Account recovery</p>
-        <h1>Reset your password</h1>
-        <p>We will send a six-digit reset code if the address exists.</p>
+        <p class="eyebrow">{{ t('Account recovery') }}</p>
+        <h1>{{ t('Reset your password') }}</h1>
+        <p>{{ t('We will send a six-digit reset code if the address exists.') }}</p>
       </div>
 
       <div v-if="accepted" class="form-stack">
         <div class="alert alert-success">
-          If the address exists, a reset code was sent. It expires in 10 minutes.
+          {{ t('If the address exists, a reset code was sent. It expires in 10 minutes.') }}
         </div>
         <button class="btn btn-primary btn-block" type="button" @click="continueToReset">
-          Enter the reset code
+          {{ t('Enter the reset code') }}
         </button>
       </div>
 
       <form v-else class="form-stack" @submit.prevent="submit">
         <label class="field">
-          <span>Email</span>
+          <span>{{ t('Email') }}</span>
           <input v-model.trim="email" type="email" autocomplete="email" required />
         </label>
         <div v-if="error" class="alert alert-error">{{ error }}</div>
         <button class="btn btn-primary btn-block" type="submit" :disabled="loading">
-          {{ loading ? 'Sending…' : 'Send reset code' }}
+          {{ loading ? t('Sending…') : t('Send reset code') }}
         </button>
       </form>
 
       <div class="auth-links">
-        <RouterLink to="/login">Return to sign in</RouterLink>
-        <RouterLink to="/register">Create an account</RouterLink>
+        <RouterLink to="/login">{{ t('Return to sign in') }}</RouterLink>
+        <RouterLink to="/register">{{ t('Create an account') }}</RouterLink>
       </div>
     </section>
   </div>

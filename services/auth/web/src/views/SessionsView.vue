@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { api } from '../api'
 import { auth, clearSession } from '../auth'
 import { formatDate, formatRelative } from '../format'
+import { t } from '../i18n'
 import { notify } from '../toast'
 import StatusBadge from '../components/StatusBadge.vue'
 
@@ -30,18 +31,19 @@ async function load() {
 }
 
 async function revoke(session) {
-  if (!window.confirm(`Revoke the ${session.client || 'unknown'} session?`)) return
+  const client = session.client || t('unknown')
+  if (!window.confirm(t('Revoke the {client} session?', { client }))) return
   busyId.value = session.id
   try {
     await api.revokeSession(session.id)
     if (session.current) {
       clearSession()
-      notify('Signed out.', 'success')
+      notify(t('Signed out.'), 'success')
       router.push({ name: 'login' })
       return
     }
     sessions.value = sessions.value.filter((item) => item.id !== session.id)
-    notify('Session revoked.', 'success')
+    notify(t('Session revoked.'), 'success')
   } catch (err) {
     notify(err.message, 'error')
   } finally {
@@ -51,7 +53,7 @@ async function revoke(session) {
 
 async function revokeOthers() {
   if (otherCount.value === 0) return
-  if (!window.confirm(`Revoke ${otherCount.value} other session(s)?`)) return
+  if (!window.confirm(t('Revoke {count} other session(s)?', { count: otherCount.value }))) return
   let failures = 0
   for (const session of sessions.value.filter((item) => !item.current)) {
     try {
@@ -62,9 +64,9 @@ async function revokeOthers() {
   }
   await load()
   if (failures) {
-    notify(`${failures} session(s) could not be revoked.`, 'error')
+    notify(t('{count} session(s) could not be revoked.', { count: failures }), 'error')
   } else {
-    notify('Other sessions revoked.', 'success')
+    notify(t('Other sessions revoked.'), 'success')
   }
 }
 
@@ -75,13 +77,13 @@ onMounted(load)
   <div class="page-stack">
     <section class="page-heading">
       <div>
-        <p class="eyebrow">Security</p>
-        <h1>Sessions</h1>
-        <p class="muted">Devices and clients that can access your account.</p>
+        <p class="eyebrow">{{ t('Security') }}</p>
+        <h1>{{ t('Sessions') }}</h1>
+        <p class="muted">{{ t('Devices and clients that can access your account.') }}</p>
       </div>
       <div class="heading-actions">
         <button class="btn btn-secondary btn-sm" type="button" @click="load" :disabled="loading">
-          Refresh
+          {{ t('Refresh') }}
         </button>
         <button
           class="btn btn-danger btn-sm"
@@ -89,7 +91,7 @@ onMounted(load)
           :disabled="loading || otherCount === 0"
           @click="revokeOthers"
         >
-          Revoke other sessions
+          {{ t('Revoke other sessions') }}
         </button>
       </div>
     </section>
@@ -98,20 +100,21 @@ onMounted(load)
 
     <section class="card table-card">
       <div v-if="loading" class="loading-row">
-        <span class="spinner spinner-sm" aria-hidden="true"></span> Loading sessions…
+        <span class="spinner spinner-sm" aria-hidden="true"></span>
+        {{ t('Loading sessions…') }}
       </div>
       <div v-else-if="sessions.length === 0" class="empty-state">
-        No active sessions.
+        {{ t('No active sessions.') }}
       </div>
       <div v-else class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Client</th>
-              <th>Address</th>
-              <th>Created</th>
-              <th>Last used</th>
-              <th>Expires</th>
+              <th>{{ t('Client') }}</th>
+              <th>{{ t('Address') }}</th>
+              <th>{{ t('Created') }}</th>
+              <th>{{ t('Last used') }}</th>
+              <th>{{ t('Expires') }}</th>
               <th></th>
             </tr>
           </thead>
@@ -123,7 +126,9 @@ onMounted(load)
                     {{ session.client || 'api' }}
                     <StatusBadge v-if="session.current" value="current" kind="status" />
                   </span>
-                  <small :title="session.user_agent">{{ session.user_agent || 'Unknown client' }}</small>
+                  <small :title="session.user_agent">
+                    {{ session.user_agent || t('Unknown client') }}
+                  </small>
                 </div>
               </td>
               <td><code>{{ session.ip || '—' }}</code></td>
@@ -137,7 +142,7 @@ onMounted(load)
                   :disabled="busyId === session.id"
                   @click="revoke(session)"
                 >
-                  Revoke
+                  {{ t('Revoke') }}
                 </button>
               </td>
             </tr>

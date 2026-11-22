@@ -1,5 +1,6 @@
 <script setup>
 import { dismiss, toasts } from '../toast'
+import { t } from '../i18n'
 </script>
 
 <template>
@@ -12,7 +13,12 @@ import { dismiss, toasts } from '../toast'
       role="status"
     >
       <span>{{ toast.message }}</span>
-      <button type="button" class="toast-close" aria-label="Dismiss" @click="dismiss(toast.id)">
+      <button
+        type="button"
+        class="toast-close"
+        :aria-label="t('Dismiss')"
+        @click="dismiss(toast.id)"
+      >
         ×
       </button>
     </div>

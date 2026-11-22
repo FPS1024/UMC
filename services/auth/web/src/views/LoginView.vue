@@ -3,6 +3,7 @@ import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api'
 import { setSession } from '../auth'
+import { t } from '../i18n'
 
 const route = useRoute()
 const router = useRouter()
@@ -17,8 +18,8 @@ const errorCode = ref('')
 const showPassword = ref(false)
 
 const notice = computed(() => {
-  if (route.query.verified === '1') return 'Email verified. You can sign in now.'
-  if (route.query.reset === '1') return 'Password updated. Sign in with your new password.'
+  if (route.query.verified === '1') return t('Email verified. You can sign in now.')
+  if (route.query.reset === '1') return t('Password updated. Sign in with your new password.')
   return ''
 })
 
@@ -44,19 +45,19 @@ async function submit() {
   <div class="auth-wrap">
     <section class="auth-card">
       <div class="auth-heading">
-        <h1>Welcome back</h1>
-        <p>Sign in with your username or email to continue.</p>
+        <h1>{{ t('Welcome back') }}</h1>
+        <p>{{ t('Sign in with your username or email to continue.') }}</p>
       </div>
 
       <div v-if="notice" class="alert alert-success">{{ notice }}</div>
 
       <form class="form-stack" @submit.prevent="submit">
         <label class="field">
-          <span>Email or username</span>
+          <span>{{ t('Email or username') }}</span>
           <input
             v-model.trim="form.login"
             autocomplete="username"
-            placeholder="name@example.com"
+            :placeholder="t('name@example.com')"
             autofocus
             required
             @input="error = ''"
@@ -64,7 +65,7 @@ async function submit() {
         </label>
 
         <label class="field">
-          <span>Password</span>
+          <span>{{ t('Password') }}</span>
           <span class="input-with-action">
             <input
               v-model="form.password"
@@ -79,17 +80,17 @@ async function submit() {
               class="input-action"
               @click="showPassword = !showPassword"
             >
-              {{ showPassword ? 'Hide' : 'Show' }}
+              {{ showPassword ? t('Hide') : t('Show') }}
             </button>
           </span>
         </label>
 
         <div class="auth-helper">
-          <RouterLink to="/forgot-password">Forgot password?</RouterLink>
+          <RouterLink to="/forgot-password">{{ t('Forgot password?') }}</RouterLink>
         </div>
 
         <button class="btn btn-primary btn-block" type="submit" :disabled="loading">
-          {{ loading ? 'Signing in…' : 'Sign in' }}
+          {{ loading ? t('Signing in…') : t('Sign in') }}
         </button>
 
         <div v-if="error" class="message error">
@@ -98,14 +99,14 @@ async function submit() {
             v-if="errorCode === 'email_not_verified'"
             :to="{ name: 'verify-email', query: { email: form.login } }"
           >
-            Verify email
+            {{ t('Verify email') }}
           </RouterLink>
         </div>
       </form>
 
       <div class="auth-footer">
-        Don't have an account?
-        <RouterLink to="/register">Create one</RouterLink>
+        {{ t("Don't have an account?") }}
+        <RouterLink to="/register">{{ t('Create one') }}</RouterLink>
       </div>
     </section>
   </div>

@@ -1,3 +1,5 @@
+import { apiErrorText } from './i18n'
+
 let accessToken = null
 let unauthorizedHandler = null
 let refreshPromise = null
@@ -59,7 +61,11 @@ async function request(path, { method = 'GET', body, form, auth = true, retry = 
       credentials: 'same-origin',
     })
   } catch {
-    throw new ApiError(0, 'network_error', 'Could not reach the authentication service')
+    throw new ApiError(
+      0,
+      'network_error',
+      apiErrorText('network_error', 'Could not reach the authentication service'),
+    )
   }
 
   const data = await decode(response)
@@ -71,10 +77,11 @@ async function request(path, { method = 'GET', body, form, auth = true, retry = 
 
   if (!response.ok) {
     const apiError = data?.error || {}
+    const code = apiError.code || 'request_failed'
     throw new ApiError(
       response.status,
-      apiError.code || 'request_failed',
-      apiError.message || `Request failed (${response.status})`,
+      code,
+      apiErrorText(code, apiError.message || `Request failed (${response.status})`),
     )
   }
   return data
@@ -123,14 +130,21 @@ export async function registerChallenge() {
       headers: { Accept: 'application/json' },
     })
   } catch {
-    throw new ApiError(0, 'network_error', 'Could not reach the authentication service')
+    throw new ApiError(
+      0,
+      'network_error',
+      apiErrorText('network_error', 'Could not reach the authentication service'),
+    )
   }
   const data = await decode(response)
   if (!response.ok) {
     throw new ApiError(
       response.status,
       data?.error || 'challenge_failed',
-      data?.errorMessage || 'Could not get a proof-of-work challenge',
+      apiErrorText(
+        data?.error,
+        data?.errorMessage || 'Could not get a proof-of-work challenge',
+      ),
     )
   }
   return data

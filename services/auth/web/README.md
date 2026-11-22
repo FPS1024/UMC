@@ -54,4 +54,7 @@ go run ./cmd/umc-auth
 The panel follows the system light/dark preference. Login and registration use a standalone,
 centered card; the rest of the panel shares the same neutral color tokens.
 
+The interface supports English and Chinese. It detects Chinese browsers on first visit, remembers
+the choice in `localStorage`, and exposes an `EN / 中文` switch in the header and on auth pages.
+
 The canonical API contract is [`protocols/auth-v1.md`](../../../protocols/auth-v1.md).

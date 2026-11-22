@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import { api } from './api'
+import { t } from './i18n'
 
 export const config = reactive({
   meta: null,
@@ -14,7 +15,7 @@ export async function loadMeta() {
     config.error = ''
     return config.meta
   } catch (error) {
-    config.error = error.message || 'Could not load server metadata'
+    config.error = error.message || t('Could not load server metadata')
     return null
   } finally {
     config.loaded = true

@@ -4,6 +4,7 @@ import { api } from '../api'
 import { auth, refreshUser } from '../auth'
 import { config } from '../config'
 import { copyText, formatDate, prettyUuid } from '../format'
+import { t } from '../i18n'
 import { notify } from '../toast'
 import StatusBadge from '../components/StatusBadge.vue'
 
@@ -27,9 +28,9 @@ const skinStyle = computed(() => {
 async function copy(value, label) {
   try {
     await copyText(value)
-    notify(`${label} copied`, 'success', 2200)
+    notify(t('{label} copied', { label: t(label) }), 'success', 2200)
   } catch {
-    notify('Could not copy to the clipboard', 'error')
+    notify(t('Could not copy to the clipboard'), 'error')
   }
 }
 
@@ -37,7 +38,7 @@ async function refresh() {
   refreshing.value = true
   try {
     await Promise.all([refreshUser(), loadProfile()])
-    notify('Profile refreshed.', 'success')
+    notify(t('Profile refreshed.'), 'success')
   } catch (err) {
     notify(err.message, 'error')
   } finally {
@@ -72,7 +73,7 @@ async function uploadSkin(event) {
   try {
     const data = await api.uploadSkin(file, skinModel.value)
     profile.value = data.profile
-    notify('Skin updated.', 'success')
+    notify(t('Skin updated.'), 'success')
   } catch (err) {
     notify(err.message, 'error')
   } finally {
@@ -81,12 +82,12 @@ async function uploadSkin(event) {
 }
 
 async function removeSkin() {
-  if (!window.confirm('Remove your current skin?')) return
+  if (!window.confirm(t('Remove your current skin?'))) return
   busy.value = 'skin'
   try {
     const data = await api.deleteSkin()
     profile.value = data.profile
-    notify('Skin removed.', 'success')
+    notify(t('Skin removed.'), 'success')
   } catch (err) {
     notify(err.message, 'error')
   } finally {
@@ -101,7 +102,7 @@ async function uploadCape(event) {
   try {
     const data = await api.uploadCape(file)
     profile.value = data.profile
-    notify('Cape updated.', 'success')
+    notify(t('Cape updated.'), 'success')
   } catch (err) {
     notify(err.message, 'error')
   } finally {
@@ -110,12 +111,12 @@ async function uploadCape(event) {
 }
 
 async function removeCape() {
-  if (!window.confirm('Remove your current cape?')) return
+  if (!window.confirm(t('Remove your current cape?'))) return
   busy.value = 'cape'
   try {
     const data = await api.deleteCape()
     profile.value = data.profile
-    notify('Cape removed.', 'success')
+    notify(t('Cape removed.'), 'success')
   } catch (err) {
     notify(err.message, 'error')
   } finally {
@@ -130,55 +131,55 @@ onMounted(loadProfile)
   <div class="page-stack" v-if="user">
     <section class="page-heading">
       <div>
-        <p class="eyebrow">Account</p>
-        <h1>Profile</h1>
-        <p class="muted">Your identity across the website, launcher, and game server.</p>
+        <p class="eyebrow">{{ t('Account') }}</p>
+        <h1>{{ t('Profile') }}</h1>
+        <p class="muted">{{ t('Your identity across the website, launcher, and game server.') }}</p>
       </div>
       <div class="heading-actions">
         <button class="btn btn-secondary btn-sm" type="button" :disabled="refreshing" @click="refresh">
-          {{ refreshing ? 'Refreshing…' : 'Refresh' }}
+          {{ refreshing ? t('Refreshing…') : t('Refresh') }}
         </button>
       </div>
     </section>
 
     <div class="card-grid">
       <section class="card">
-        <h2>Identity</h2>
+        <h2>{{ t('Identity') }}</h2>
         <dl class="detail-list">
-          <div><dt>Username</dt><dd>{{ user.username }}</dd></div>
-          <div><dt>Email</dt><dd>{{ user.email || '—' }}</dd></div>
+          <div><dt>{{ t('Username') }}</dt><dd>{{ user.username }}</dd></div>
+          <div><dt>{{ t('Email') }}</dt><dd>{{ user.email || '—' }}</dd></div>
           <div>
-            <dt>Email status</dt>
+            <dt>{{ t('Email status') }}</dt>
             <dd>
-              <span v-if="user.email_verified" class="badge badge-verified">verified</span>
-              <span v-else class="badge badge-warning">not verified</span>
+              <span v-if="user.email_verified" class="badge badge-verified">{{ t('verified') }}</span>
+              <span v-else class="badge badge-warning">{{ t('not verified') }}</span>
             </dd>
           </div>
           <div>
-            <dt>Role</dt>
+            <dt>{{ t('Role') }}</dt>
             <dd><StatusBadge :value="user.role" kind="role" /></dd>
           </div>
           <div>
-            <dt>Status</dt>
+            <dt>{{ t('Status') }}</dt>
             <dd><StatusBadge :value="user.status" kind="status" /></dd>
           </div>
         </dl>
       </section>
 
       <section class="card">
-        <h2>Minecraft profile</h2>
+        <h2>{{ t('Minecraft profile') }}</h2>
         <dl class="detail-list">
           <div>
-            <dt>UUID</dt>
+            <dt>{{ t('UUID') }}</dt>
             <dd>
               <code>{{ prettyUuid(user.uuid) }}</code>
               <button class="btn btn-ghost btn-xs" type="button" @click="copy(user.uuid, 'UUID')">
-                Copy
+                {{ t('Copy') }}
               </button>
             </dd>
           </div>
           <div>
-            <dt>Yggdrasil endpoint</dt>
+            <dt>{{ t('Launcher endpoint') }}</dt>
             <dd class="copy-row">
               <code class="code-wrap">{{ yggdrasilUrl }}</code>
               <button
@@ -186,21 +187,22 @@ onMounted(loadProfile)
                 type="button"
                 @click="copy(yggdrasilUrl, 'Yggdrasil URL')"
               >
-                Copy
+                {{ t('Copy') }}
               </button>
             </dd>
           </div>
         </dl>
         <p class="muted small">
-          The launcher receives a signed <code>textures</code> property when it joins a server.
+          {{ t('The launcher receives a signed textures property when it joins a server.') }}
         </p>
       </section>
 
       <section class="card">
-        <h2>Skin</h2>
+        <h2>{{ t('Skin') }}</h2>
         <div v-if="profileError" class="alert alert-error">{{ profileError }}</div>
         <div v-else-if="profileLoading" class="loading-row">
-          <span class="spinner spinner-sm" aria-hidden="true"></span> Loading skin…
+          <span class="spinner spinner-sm" aria-hidden="true"></span>
+          {{ t('Loading skin…') }}
         </div>
         <div v-else class="skin-editor">
           <div class="skin-preview-grid">
@@ -210,28 +212,28 @@ onMounted(loadProfile)
               v-if="profile?.skin_url"
               :src="profile.skin_url"
               class="skin-full"
-              alt="Current skin"
+              :alt="t('Current skin')"
             />
-            <span v-else class="muted small">No skin uploaded.</span>
+            <span v-else class="muted small">{{ t('No skin uploaded.') }}</span>
           </div>
           <div class="form-stack">
             <label class="field">
-              <span>Skin file</span>
+              <span>{{ t('Skin file') }}</span>
               <input
                 type="file"
                 accept="image/png"
                 :disabled="busy === 'skin'"
                 @change="uploadSkin"
               />
-              <small>64×64 or 64×32 PNG, up to 1 MB.</small>
+              <small>{{ t('64×64 or 64×32 PNG, up to 1 MB.') }}</small>
             </label>
             <label class="inline-field">
-              <span>Model</span>
+              <span>{{ t('Model') }}</span>
               <select v-model="skinModel" :disabled="busy === 'skin' || !profile">
-                <option value="classic">classic</option>
-                <option value="slim">slim</option>
+                <option value="classic">{{ t('classic') }}</option>
+                <option value="slim">{{ t('slim') }}</option>
               </select>
-              <small>Applied on the next skin upload.</small>
+              <small>{{ t('Applied on the next skin upload.') }}</small>
             </label>
             <div class="card-actions">
               <button
@@ -240,7 +242,7 @@ onMounted(loadProfile)
                 :disabled="busy === 'skin' || !profile?.skin_url"
                 @click="removeSkin"
               >
-                Remove skin
+                {{ t('Remove skin') }}
               </button>
             </div>
           </div>
@@ -248,27 +250,27 @@ onMounted(loadProfile)
       </section>
 
       <section class="card">
-        <h2>Cape</h2>
+        <h2>{{ t('Cape') }}</h2>
         <div class="skin-editor">
           <div class="skin-preview-grid">
             <img
               v-if="profile?.cape_url"
               :src="profile.cape_url"
               class="cape-preview"
-              alt="Current cape"
+              :alt="t('Current cape')"
             />
-            <span v-else class="muted small">No cape uploaded.</span>
+            <span v-else class="muted small">{{ t('No cape uploaded.') }}</span>
           </div>
           <div class="form-stack">
             <label class="field">
-              <span>Cape file</span>
+              <span>{{ t('Cape file') }}</span>
               <input
                 type="file"
                 accept="image/png"
                 :disabled="busy === 'cape'"
                 @change="uploadCape"
               />
-              <small>64×32 or 64×64 PNG, up to 1 MB.</small>
+              <small>{{ t('64×32 or 64×64 PNG, up to 1 MB.') }}</small>
             </label>
             <div class="card-actions">
               <button
@@ -277,7 +279,7 @@ onMounted(loadProfile)
                 :disabled="busy === 'cape' || !profile?.cape_url"
                 @click="removeCape"
               >
-                Remove cape
+                {{ t('Remove cape') }}
               </button>
             </div>
           </div>
@@ -285,24 +287,27 @@ onMounted(loadProfile)
       </section>
 
       <section class="card">
-        <h2>Account details</h2>
+        <h2>{{ t('Account details') }}</h2>
         <dl class="detail-list">
-          <div><dt>Created</dt><dd>{{ formatDate(user.created_at) }}</dd></div>
-          <div><dt>Updated</dt><dd>{{ formatDate(user.updated_at) }}</dd></div>
-          <div><dt>Session</dt><dd>{{ auth.session?.client || 'web' }}</dd></div>
-          <div><dt>Last used</dt><dd>{{ formatDate(auth.session?.last_used_at) }}</dd></div>
+          <div><dt>{{ t('Created') }}</dt><dd>{{ formatDate(user.created_at) }}</dd></div>
+          <div><dt>{{ t('Updated') }}</dt><dd>{{ formatDate(user.updated_at) }}</dd></div>
+          <div><dt>{{ t('Session') }}</dt><dd>{{ auth.session?.client || 'web' }}</dd></div>
+          <div><dt>{{ t('Last used') }}</dt><dd>{{ formatDate(auth.session?.last_used_at) }}</dd></div>
         </dl>
       </section>
 
       <section class="card">
-        <h2>Account changes</h2>
+        <h2>{{ t('Account changes') }}</h2>
         <p class="muted">
-          Email changes and self-service account deletion are not available yet. Contact a server
-          administrator if you need help with account recovery.
+          {{ t('Email changes and self-service account deletion are not available yet. Contact a server administrator if you need help with account recovery.') }}
         </p>
         <div class="card-actions">
-          <RouterLink class="btn btn-secondary btn-sm" to="/sessions">Review sessions</RouterLink>
-          <RouterLink class="btn btn-ghost btn-sm" to="/forgot-password">Reset password</RouterLink>
+          <RouterLink class="btn btn-secondary btn-sm" to="/sessions">
+            {{ t('Review sessions') }}
+          </RouterLink>
+          <RouterLink class="btn btn-ghost btn-sm" to="/forgot-password">
+            {{ t('Reset password') }}
+          </RouterLink>
         </div>
       </section>
     </div>

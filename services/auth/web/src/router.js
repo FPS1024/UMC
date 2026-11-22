@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { auth, bootstrap, isAdmin, isStaff } from './auth'
+import { t } from './i18n'
 
 import LoginView from './views/LoginView.vue'
 import RegisterView from './views/RegisterView.vue'
@@ -137,7 +138,7 @@ router.beforeEach(async (to) => {
 })
 
 router.afterEach((to) => {
-  document.title = to.meta.title ? `${to.meta.title} · UMC Auth` : 'UMC Auth'
+  document.title = to.meta.title ? `${t(to.meta.title)} · UMC Auth` : 'UMC Auth'
 })
 
 export default router

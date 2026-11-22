@@ -1,8 +1,14 @@
+import { locale, t } from './i18n'
+
+function dateLocale() {
+  return locale.value === 'zh' ? 'zh-CN' : 'en-US'
+}
+
 export function formatDate(value) {
   if (!value) return '—'
   const date = new Date(value * 1000)
   if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString(dateLocale(), {
     year: 'numeric',
     month: 'short',
     day: '2-digit',
@@ -15,7 +21,7 @@ export function formatDateOnly(value) {
   if (!value) return '—'
   const date = new Date(value * 1000)
   if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(dateLocale(), {
     year: 'numeric',
     month: 'short',
     day: '2-digit',
@@ -25,10 +31,10 @@ export function formatDateOnly(value) {
 export function formatRelative(value) {
   if (!value) return '—'
   const seconds = Math.round(Date.now() / 1000 - value)
-  if (seconds < 60) return 'just now'
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
-  if (seconds < 86400 * 30) return `${Math.floor(seconds / 86400)}d ago`
+  if (seconds < 60) return t('just now')
+  if (seconds < 3600) return t('{count}m ago', { count: Math.floor(seconds / 60) })
+  if (seconds < 86400) return t('{count}h ago', { count: Math.floor(seconds / 3600) })
+  if (seconds < 86400 * 30) return t('{count}d ago', { count: Math.floor(seconds / 86400) })
   return formatDateOnly(value)
 }
 

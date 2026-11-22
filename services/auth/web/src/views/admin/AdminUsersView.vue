@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { api } from '../../api'
 import { auth, isAdmin } from '../../auth'
 import { copyText, formatDate } from '../../format'
+import { t } from '../../i18n'
 import { notify } from '../../toast'
 import AdminNav from '../../components/AdminNav.vue'
 import StatusBadge from '../../components/StatusBadge.vue'
@@ -74,12 +75,15 @@ function go(delta) {
 
 async function toggleStatus(user) {
   const disable = user.status !== 'disabled'
-  if (!window.confirm(`${disable ? 'Disable' : 'Enable'} ${user.username}?`)) return
+  const prompt = disable
+    ? t('Disable {username}?', { username: user.username })
+    : t('Enable {username}?', { username: user.username })
+  if (!window.confirm(prompt)) return
   busy.value = `${user.uuid}:status`
   try {
     const data = await api.admin.setStatus(user.uuid, disable)
     applyUser(data.user)
-    notify(disable ? 'Account disabled.' : 'Account enabled.', 'success')
+    notify(disable ? t('Account disabled.') : t('Account enabled.'), 'success')
   } catch (err) {
     notify(err.message, 'error')
   } finally {
@@ -94,7 +98,7 @@ async function saveRole(user) {
   try {
     const data = await api.admin.setRole(user.uuid, role)
     applyUser(data.user)
-    notify('Role updated.', 'success')
+    notify(t('Role updated.'), 'success')
   } catch (err) {
     roleDrafts[user.uuid] = user.role
     notify(err.message, 'error')
@@ -104,12 +108,13 @@ async function saveRole(user) {
 }
 
 async function verify(user) {
-  if (!window.confirm(`Mark ${user.email || user.username} as verified?`)) return
+  const identity = user.email || user.username
+  if (!window.confirm(t('Mark {email} as verified?', { email: identity }))) return
   busy.value = `${user.uuid}:verify`
   try {
     const data = await api.admin.verifyEmail(user.uuid)
     applyUser(data.user)
-    notify('Email marked verified.', 'success')
+    notify(t('Email marked verified.'), 'success')
   } catch (err) {
     notify(err.message, 'error')
   } finally {
@@ -118,7 +123,9 @@ async function verify(user) {
 }
 
 async function reset(user) {
-  if (!window.confirm(`Generate a new password for ${user.username}?`)) return
+  if (!window.confirm(t('Generate a new password for {username}?', { username: user.username }))) {
+    return
+  }
   busy.value = `${user.uuid}:reset`
   try {
     const data = await api.admin.resetPassword(user.uuid)
@@ -127,7 +134,7 @@ async function reset(user) {
       username: user.username,
       password: data.generated_password,
     }
-    notify('Password reset. Copy the generated password now.', 'success')
+    notify(t('Password reset. Copy the generated password now.'), 'success')
   } catch (err) {
     notify(err.message, 'error')
   } finally {
@@ -139,9 +146,9 @@ async function copyGenerated() {
   if (!generated.value) return
   try {
     await copyText(generated.value.password)
-    notify('Password copied', 'success', 2200)
+    notify(t('Password copied'), 'success', 2200)
   } catch {
-    notify('Could not copy the password', 'error')
+    notify(t('Could not copy the password'), 'error')
   }
 }
 
@@ -153,30 +160,38 @@ onMounted(load)
     <AdminNav />
     <section class="page-heading">
       <div>
-        <p class="eyebrow">Administration</p>
-        <h1>Users</h1>
-        <p class="muted">Search accounts, change roles, disable users, and reset credentials.</p>
+        <p class="eyebrow">{{ t('Administration') }}</p>
+        <h1>{{ t('Users') }}</h1>
+        <p class="muted">
+          {{ t('Search accounts, change roles, disable users, and reset credentials.') }}
+        </p>
       </div>
       <form class="search-form" @submit.prevent="search">
         <input
           v-model.trim="query"
           type="search"
-          placeholder="Username, email, or UUID"
-          aria-label="Search users"
+          :placeholder="t('Username, email, or UUID')"
+          :aria-label="t('Search users')"
         />
-        <button class="btn btn-primary btn-sm" type="submit" :disabled="loading">Search</button>
+        <button class="btn btn-primary btn-sm" type="submit" :disabled="loading">
+          {{ t('Search') }}
+        </button>
       </form>
     </section>
 
     <div v-if="generated" class="alert alert-warning generated-panel">
       <div>
-        New password for <strong>{{ generated.username }}</strong>:
+        {{ t('New password for') }} <strong>{{ generated.username }}</strong>:
         <code>{{ generated.password }}</code>
-        <span class="muted small">Shown once. Copy it now.</span>
+        <span class="muted small">{{ t('Shown once. Copy it now.') }}</span>
       </div>
       <div class="generated-actions">
-        <button class="btn btn-secondary btn-sm" type="button" @click="copyGenerated">Copy</button>
-        <button class="btn btn-ghost btn-sm" type="button" @click="generated = null">Dismiss</button>
+        <button class="btn btn-secondary btn-sm" type="button" @click="copyGenerated">
+          {{ t('Copy') }}
+        </button>
+        <button class="btn btn-ghost btn-sm" type="button" @click="generated = null">
+          {{ t('Dismiss') }}
+        </button>
       </div>
     </div>
 
@@ -184,21 +199,22 @@ onMounted(load)
 
     <section class="card table-card">
       <div v-if="loading" class="loading-row">
-        <span class="spinner spinner-sm" aria-hidden="true"></span> Loading users…
+        <span class="spinner spinner-sm" aria-hidden="true"></span>
+        {{ t('Loading users…') }}
       </div>
       <div v-else-if="users.length === 0" class="empty-state">
-        No accounts matched this search.
+        {{ t('No accounts matched this search.') }}
       </div>
       <div v-else class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Account</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Email</th>
-              <th>Created</th>
-              <th class="cell-actions">Actions</th>
+              <th>{{ t('Account') }}</th>
+              <th>{{ t('Role') }}</th>
+              <th>{{ t('Status') }}</th>
+              <th>{{ t('Email') }}</th>
+              <th>{{ t('Created') }}</th>
+              <th class="cell-actions">{{ t('Actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -206,15 +222,18 @@ onMounted(load)
               <td>
                 <div class="cell-stack">
                   <strong>{{ user.username }}</strong>
-                  <small>{{ user.email || 'no email' }}</small>
+                  <small>{{ user.email || t('no email') }}</small>
                   <small class="mono">{{ user.uuid }}</small>
                 </div>
               </td>
               <td>
                 <div v-if="canManage(user)" class="role-editor">
-                  <select v-model="roleDrafts[user.uuid]" :aria-label="`Role for ${user.username}`">
+                  <select
+                    v-model="roleDrafts[user.uuid]"
+                    :aria-label="t('Role for {username}', { username: user.username })"
+                  >
                     <option v-for="role in roleOptions" :key="role" :value="role">
-                      {{ role }}
+                      {{ t(role) }}
                     </option>
                   </select>
                   <button
@@ -223,15 +242,17 @@ onMounted(load)
                     :disabled="busy === `${user.uuid}:role` || roleDrafts[user.uuid] === user.role"
                     @click="saveRole(user)"
                   >
-                    Save
+                    {{ t('Save') }}
                   </button>
                 </div>
                 <StatusBadge v-else :value="user.role" kind="role" />
               </td>
               <td><StatusBadge :value="user.status" kind="status" /></td>
               <td>
-                <span v-if="user.email_verified" class="badge badge-verified">verified</span>
-                <span v-else class="badge badge-warning">pending</span>
+                <span v-if="user.email_verified" class="badge badge-verified">
+                  {{ t('verified') }}
+                </span>
+                <span v-else class="badge badge-warning">{{ t('pending') }}</span>
               </td>
               <td>{{ formatDate(user.created_at) }}</td>
               <td class="cell-actions">
@@ -242,7 +263,7 @@ onMounted(load)
                     :disabled="busy === `${user.uuid}:status`"
                     @click="toggleStatus(user)"
                   >
-                    {{ user.status === 'disabled' ? 'Enable' : 'Disable' }}
+                    {{ t(user.status === 'disabled' ? 'Enable' : 'Disable') }}
                   </button>
                   <button
                     v-if="!user.email_verified"
@@ -251,7 +272,7 @@ onMounted(load)
                     :disabled="busy === `${user.uuid}:verify`"
                     @click="verify(user)"
                   >
-                    Verify
+                    {{ t('Verify') }}
                   </button>
                   <button
                     class="btn btn-ghost btn-xs"
@@ -259,11 +280,11 @@ onMounted(load)
                     :disabled="busy === `${user.uuid}:reset`"
                     @click="reset(user)"
                   >
-                    Reset password
+                    {{ t('Reset password') }}
                   </button>
                 </div>
                 <span v-else class="muted small">
-                  {{ user.uuid === auth.user?.uuid ? 'This is you' : 'Read only' }}
+                  {{ t(user.uuid === auth.user?.uuid ? 'This is you' : 'Read only') }}
                 </span>
               </td>
             </tr>
@@ -273,7 +294,11 @@ onMounted(load)
 
       <div class="table-footer">
         <span class="muted small">
-          {{ total }} account(s) · page {{ page }} of {{ pages }}
+          {{ t('{count} account(s) · page {page} of {pages}', {
+            count: total,
+            page,
+            pages,
+          }) }}
         </span>
         <div class="heading-actions">
           <button
@@ -282,7 +307,7 @@ onMounted(load)
             :disabled="offset === 0 || loading"
             @click="go(-1)"
           >
-            Previous
+            {{ t('Previous') }}
           </button>
           <button
             class="btn btn-ghost btn-sm"
@@ -290,7 +315,7 @@ onMounted(load)
             :disabled="offset + limit >= total || loading"
             @click="go(1)"
           >
-            Next
+            {{ t('Next') }}
           </button>
         </div>
       </div>
