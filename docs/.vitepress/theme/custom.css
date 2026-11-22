@@ -149,8 +149,8 @@ body {
 }
 
 /* Download is a quiet solid pill in the top navigation. */
-.VPNavBarMenu a[href*='releases/latest'],
-.VPNavScreenMenu a[href*='releases/latest'] {
+.VPNavBarMenu a[href*='/guide/install'],
+.VPNavScreenMenu a[href*='/guide/install'] {
   display: inline-flex;
   align-items: center;
   align-self: center;
@@ -165,11 +165,11 @@ body {
   box-sizing: border-box;
   transition: background 0.2s ease, transform 0.2s ease;
 }
-.dark .VPNavBarMenu a[href*='releases/latest'],
-.dark .VPNavScreenMenu a[href*='releases/latest'] {
+.dark .VPNavBarMenu a[href*='/guide/install'],
+.dark .VPNavScreenMenu a[href*='/guide/install'] {
   color: #0b0d12 !important;
 }
-.VPNavBarMenu a[href*='releases/latest']:hover {
+.VPNavBarMenu a[href*='/guide/install']:hover {
   background: var(--vp-c-brand-2);
   transform: translateY(-1px);
 }

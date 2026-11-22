@@ -6,8 +6,9 @@ const { page } = useData()
 const isChinese = computed(() => page.value.relativePath.startsWith('zh/'))
 const locale = computed(() => (isChinese.value ? 'zh' : 'en'))
 const quickstartHref = computed(() => withBase(`/${locale.value}/guide/quickstart`))
+const installHref = computed(() => withBase(`/${locale.value}/guide/install`))
 const userGuideHref = computed(() => withBase(`/${locale.value}/guide/user-guide`))
-const releaseHref = computed(() => withBase(`/${locale.value}/reference/release`))
+const releaseHref = computed(() => withBase(`/${locale.value}/reference/releases/v0.1.0`))
 
 const en = {
   surfaces: {
@@ -37,7 +38,7 @@ const en = {
   },
   status: {
     nowPill: 'Available now',
-    nowTitle: 'What ships in v0.1.0',
+    nowTitle: 'What is implemented',
     nowItems: [
       'Vanilla version discovery and verified downloads',
       'Isolated instances with config migration and repair',
@@ -56,13 +57,13 @@ const en = {
       'Windows and macOS ports',
       'Live log and crash-report streaming',
     ],
-    releaseLink: 'Read the release policy →',
+    releaseLink: 'Read the release notes →',
   },
   cta: {
     eyebrow: 'Start building',
     title: 'Ship your launcher on UMC.',
-    lead: 'Download the Linux build, follow the quickstart, or integrate the engine directly into your Rust application.',
-    download: 'Download for Linux',
+    lead: 'Build the Linux target, follow the quickstart, or integrate the engine directly into your Rust application.',
+    download: 'Install UMC',
     docs: 'Read the docs',
     github: 'GitHub',
     note: 'MIT licensed · Linux x86_64 · No telemetry',
@@ -97,7 +98,7 @@ const zh = {
   },
   status: {
     nowPill: '当前可用',
-    nowTitle: 'v0.1.0 包含什么',
+    nowTitle: '当前已实现',
     nowItems: [
       '原版版本发现与已验证下载',
       '带配置迁移和修复的独立实例',
@@ -116,13 +117,13 @@ const zh = {
       'Windows 和 macOS 移植',
       '实时日志与崩溃报告流',
     ],
-    releaseLink: '阅读发布策略 →',
+    releaseLink: '阅读发布说明 →',
   },
   cta: {
     eyebrow: '开始构建',
     title: '用 UMC 构建你的启动器。',
-    lead: '下载 Linux 构建、阅读快速开始，或把引擎直接集成到你的 Rust 应用中。',
-    download: '下载 Linux 版',
+    lead: '构建 Linux 目标、阅读快速开始，或把引擎直接集成到你的 Rust 应用中。',
+    download: '安装 UMC',
     docs: '阅读文档',
     github: 'GitHub',
     note: 'MIT 许可证 · Linux x86_64 · 无遥测',
@@ -266,7 +267,7 @@ const t = computed(() => (isChinese.value ? zh : en))
         <div class="umc-cta-actions">
           <a
             class="umc-button umc-button--primary"
-            href="https://github.com/FPS1024/UMC/releases/latest"
+            :href="installHref"
           >
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M10 3v10M6 9l4 4 4-4M4 16h12" stroke-linecap="round" stroke-linejoin="round" />
