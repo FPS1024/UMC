@@ -1,4 +1,0 @@
-{$MIRROR_DOMAIN} {
-	encode zstd gzip
-	reverse_proxy mirror:8080
-}
