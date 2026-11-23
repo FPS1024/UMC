@@ -123,7 +123,7 @@ The UMC-Community organization also maintains independently deployable services:
 | Service | Status | Purpose |
 |---|---|---|
 | [UMC Auth](https://github.com/UMC-Community/UMC-Auth) | Account system implemented | Self-hosted Go/Nginx/PostgreSQL accounts with `/api/v1`, a Vue panel, optional Stalwart mail, and Yggdrasil-compatible authentication |
-| Java Edition server | Planned | Dockerized Minecraft: Java Edition server |
+| [UMC-Java-Server](https://github.com/UMC-Community/UMC-Java-Server) | Planned | Dockerized Minecraft: Java Edition server |
 | [UMC-Mirror](https://github.com/UMC-Community/UMC-Mirror) | Initial implementation | HTTPS-only Go cache with SHA-1 verification for configured upstream objects |
 
 UMC-Auth and UMC-Mirror have Docker Compose deployments. Auth runs behind Nginx with

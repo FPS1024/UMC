@@ -6,7 +6,7 @@ launcher developers can run only the services they need.
 | Service | Status | Purpose |
 |---|---|---|
 | [UMC-Auth](https://github.com/UMC-Community/UMC-Auth) | Account system implemented | Self-hosted Go/Nginx/PostgreSQL accounts with `/api/v1`, a Vue panel, optional Stalwart mail, and Yggdrasil-compatible authentication |
-| [`java-server/`](./java-server/) | Planned | Dockerized Minecraft: Java Edition server |
+| [UMC-Java-Server](https://github.com/UMC-Community/UMC-Java-Server) | Planned | Dockerized Minecraft: Java Edition server |
 | [UMC-Mirror](https://github.com/UMC-Community/UMC-Mirror) | Initial implementation | HTTPS-only Go object cache with SHA-1 verification |
 
 UMC-Auth and UMC-Mirror have Docker Compose deployments. UMC Auth uses Nginx, a
