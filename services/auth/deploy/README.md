@@ -10,8 +10,8 @@ password reset, admin API, self-hosted Stalwart mail profile, Vue 3 account pane
 and capes, signed texture properties, and server/join administration are implemented. Email change
 and OAuth clients are planned. The full architecture, environment variables, data model, mail
 requirements, texture storage, and resource budget are in
-[`docs/en/services/auth-deployment.md`](../../../docs/en/services/auth-deployment.md) and
-[`docs/zh/services/auth-deployment.md`](../../../docs/zh/services/auth-deployment.md).
+[English deployment guide](https://umc-community.github.io/Docs/en/services/auth-deployment) and
+[简体中文部署指南](https://umc-community.github.io/Docs/zh/services/auth-deployment).
 
 ## Status
 
@@ -52,7 +52,7 @@ separately and change `build:` to `image:`.
 ## Quick start
 
 ```sh
-git clone https://github.com/FPS1024/UMC.git /opt/UMC
+git clone https://github.com/UMC-Community/UMC.git /opt/UMC
 cd /opt/UMC/services/auth/deploy
 ./scripts/setup.sh
 $EDITOR .env

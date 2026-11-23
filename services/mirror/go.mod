@@ -1,3 +1,3 @@
-module github.com/FPS1024/UMC/services/mirror
+module github.com/UMC-Community/UMC/services/mirror
 
 go 1.24

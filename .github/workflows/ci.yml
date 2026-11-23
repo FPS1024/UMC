@@ -89,6 +89,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
+      - name: Checkout documentation for release package
+        run: git clone --depth 1 https://github.com/UMC-Community/Docs.git docs-source
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-gnu
@@ -102,7 +104,7 @@ jobs:
           cp target/x86_64-unknown-linux-gnu/release/umc "$package_dir/"
           cp target/x86_64-unknown-linux-gnu/release/umcd "$package_dir/"
           cp LICENSE README.md "$package_dir/"
-          cp docs/en/guide/user-guide.md "$package_dir/INSTALL.md"
+          cp docs-source/en/guide/user-guide.md "$package_dir/INSTALL.md"
           tar -C dist -czf dist/umc-linux-x86_64.tar.gz umc-linux-x86_64
           sha256sum dist/umc-linux-x86_64.tar.gz > dist/umc-linux-x86_64.tar.gz.sha256
       - name: Upload Linux release candidate

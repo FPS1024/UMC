@@ -1,4 +1,4 @@
-module github.com/FPS1024/UMC/services/auth
+module github.com/UMC-Community/UMC/services/auth
 
 go 1.24
 

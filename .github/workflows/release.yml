@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
+      - name: Checkout release documentation
+        run: git clone --depth 1 https://github.com/UMC-Community/Docs.git docs-source
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-gnu
@@ -41,7 +43,7 @@ jobs:
           cp "target/x86_64-unknown-linux-gnu/release/umc" "$package_dir/"
           cp "target/x86_64-unknown-linux-gnu/release/umcd" "$package_dir/"
           cp LICENSE README.md "$package_dir/"
-          cp docs/en/guide/user-guide.md "$package_dir/INSTALL.md"
+          cp docs-source/en/guide/user-guide.md "$package_dir/INSTALL.md"
           tar -C dist -czf "dist/${archive_base}.tar.gz" "$archive_base"
           cd dist
           sha256sum "${archive_base}.tar.gz" > "${archive_base}.tar.gz.sha256"
@@ -54,6 +56,6 @@ jobs:
           "dist/umc-v${GITHUB_REF_NAME#v}-linux-x86_64-gnu.tar.gz.sha256"
           --repo "${GITHUB_REPOSITORY}"
           --title "UMC ${GITHUB_REF_NAME}"
-          --notes-file "docs/releases/v${GITHUB_REF_NAME#v}.md"
+          --notes-file "docs-source/en/reference/releases/v${GITHUB_REF_NAME#v}.md"
           --verify-tag
           --latest

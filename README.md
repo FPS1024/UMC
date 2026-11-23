@@ -12,19 +12,19 @@
 </p>
 
 <p>
-  <a href="https://github.com/FPS1024/UMC/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/FPS1024/UMC/ci.yml?branch=main&label=CI&style=flat-square" /></a>
-  <a href="https://github.com/FPS1024/UMC/actions/workflows/docs.yml"><img alt="Documentation" src="https://img.shields.io/github/actions/workflow/status/FPS1024/UMC/docs.yml?branch=main&label=docs&style=flat-square" /></a>
-  <a href="https://github.com/FPS1024/UMC/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/FPS1024/UMC?style=flat-square&color=4f63e8" /></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/FPS1024/UMC?style=flat-square&color=22c997" /></a>
+  <a href="https://github.com/UMC-Community/UMC/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/UMC-Community/UMC/ci.yml?branch=main&label=CI&style=flat-square" /></a>
+  <a href="https://github.com/UMC-Community/Docs/actions/workflows/pages.yml"><img alt="Documentation" src="https://img.shields.io/github/actions/workflow/status/UMC-Community/Docs/pages.yml?branch=main&label=docs&style=flat-square" /></a>
+  <a href="https://github.com/UMC-Community/UMC/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/UMC-Community/UMC?style=flat-square&color=4f63e8" /></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/UMC-Community/UMC?style=flat-square&color=22c997" /></a>
   <img alt="Rust" src="https://img.shields.io/badge/rust-1.89%2B-000000?style=flat-square&logo=rust" />
   <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20x86__64-4f63e8?style=flat-square&logo=linux&logoColor=white" />
 </p>
 
 <p>
-  <a href="https://fps1024.github.io/UMC/en/">Documentation</a> ·
-  <a href="https://fps1024.github.io/UMC/en/guide/quickstart">Quickstart</a> ·
-  <a href="https://fps1024.github.io/UMC/zh/">简体中文</a> ·
-  <a href="https://github.com/FPS1024/UMC/releases/latest">Releases</a> ·
+  <a href="https://umc-community.github.io/Docs/en/">Documentation</a> ·
+  <a href="https://umc-community.github.io/Docs/en/guide/quickstart">Quickstart</a> ·
+  <a href="https://umc-community.github.io/Docs/zh/">简体中文</a> ·
+  <a href="https://github.com/UMC-Community/UMC/releases/latest">Releases</a> ·
   <a href="https://discord.gg/d5qKvMp9Wc">Discord</a>
 </p>
 
@@ -89,7 +89,7 @@ instance data, errors, and process handling stay consistent.
 Build from source:
 
 ```sh
-git clone https://github.com/FPS1024/UMC.git
+git clone https://github.com/UMC-Community/UMC.git
 cd UMC
 cargo build --workspace --locked --release
 
@@ -108,9 +108,9 @@ Offline launch is still available for local testing:
 ```
 
 Or download the latest Linux archive from
-[GitHub Releases](https://github.com/FPS1024/UMC/releases/latest) and verify its SHA-256 checksum.
+[GitHub Releases](https://github.com/UMC-Community/UMC/releases/latest) and verify its SHA-256 checksum.
 
-Read the full [Quickstart](https://fps1024.github.io/UMC/en/guide/quickstart) for release setup,
+Read the full [Quickstart](https://umc-community.github.io/Docs/en/guide/quickstart) for release setup,
 Java provisioning, logs, and first-run details.
 
 > [!WARNING]
@@ -137,10 +137,10 @@ separate from the launcher's Microsoft sign-in and ownership checks.
 
 | User documentation | Developer documentation | Reference |
 |---|---|---|
-| [User guide](https://fps1024.github.io/UMC/en/guide/user-guide)<br />[Quickstart](https://fps1024.github.io/UMC/en/guide/quickstart)<br />[CLI reference](https://fps1024.github.io/UMC/en/guide/cli)<br />[Instances](https://fps1024.github.io/UMC/en/guide/instances)<br />[Java runtimes](https://fps1024.github.io/UMC/en/guide/java)<br />[Launching](https://fps1024.github.io/UMC/en/guide/launching)<br />[Troubleshooting](https://fps1024.github.io/UMC/en/guide/troubleshooting) | [Integration guide](https://fps1024.github.io/UMC/en/development/)<br />[Rust SDK](https://fps1024.github.io/UMC/en/development/sdk)<br />[Architecture](https://fps1024.github.io/UMC/en/development/architecture)<br />[Loader adapters](https://fps1024.github.io/UMC/en/development/loaders)<br />[JSON-RPC client guide](https://fps1024.github.io/UMC/en/development/rpc-client)<br />[Testing and CI](https://fps1024.github.io/UMC/en/development/testing)<br />[Contributing](https://fps1024.github.io/UMC/en/development/contributing) | [JSON-RPC v1](https://fps1024.github.io/UMC/en/reference/rpc-v1)<br />[Auth API v1](https://fps1024.github.io/UMC/en/reference/auth-v1)<br />[Compatibility policy](https://fps1024.github.io/UMC/en/about/compatibility)<br />[Privacy Policy](https://fps1024.github.io/UMC/en/about/privacy)<br />[Terms of Service](https://fps1024.github.io/UMC/en/about/terms)<br />[v0.1.0 release notes](https://fps1024.github.io/UMC/en/reference/releases/v0.1.0) |
+| [User guide](https://umc-community.github.io/Docs/en/guide/user-guide)<br />[Quickstart](https://umc-community.github.io/Docs/en/guide/quickstart)<br />[CLI reference](https://umc-community.github.io/Docs/en/guide/cli)<br />[Instances](https://umc-community.github.io/Docs/en/guide/instances)<br />[Java runtimes](https://umc-community.github.io/Docs/en/guide/java)<br />[Launching](https://umc-community.github.io/Docs/en/guide/launching)<br />[Troubleshooting](https://umc-community.github.io/Docs/en/guide/troubleshooting) | [Integration guide](https://umc-community.github.io/Docs/en/development/)<br />[Rust SDK](https://umc-community.github.io/Docs/en/development/sdk)<br />[Architecture](https://umc-community.github.io/Docs/en/development/architecture)<br />[Loader adapters](https://umc-community.github.io/Docs/en/development/loaders)<br />[JSON-RPC client guide](https://umc-community.github.io/Docs/en/development/rpc-client)<br />[Testing and CI](https://umc-community.github.io/Docs/en/development/testing)<br />[Contributing](https://umc-community.github.io/Docs/en/development/contributing) | [JSON-RPC v1](https://umc-community.github.io/Docs/en/reference/rpc-v1)<br />[Auth API v1](https://umc-community.github.io/Docs/en/reference/auth-v1)<br />[Compatibility policy](https://umc-community.github.io/Docs/en/about/compatibility)<br />[Privacy Policy](https://umc-community.github.io/Docs/en/about/privacy)<br />[Terms of Service](https://umc-community.github.io/Docs/en/about/terms)<br />[v0.1.0 release notes](https://umc-community.github.io/Docs/en/reference/releases/v0.1.0) |
 
-The documentation is available in [English](https://fps1024.github.io/UMC/en/) and
-[简体中文](https://fps1024.github.io/UMC/zh/).
+The documentation is available in [English](https://umc-community.github.io/Docs/en/) and
+[简体中文](https://umc-community.github.io/Docs/zh/).
 
 ## Requirements
 
@@ -166,11 +166,7 @@ crates/
   umc-loader-forge   Forge Maven adapter
   umc-loader-neoforge NeoForge Maven adapter
   umc-loader-registry built-in and host adapters
-docs/
-  en/                English documentation source
-  zh/                Chinese translations
 protocols/           canonical contracts: JSON-RPC and Auth API v1
-scripts/             documentation sync and i18n helpers
 ```
 
 </details>
@@ -180,8 +176,8 @@ scripts/             documentation sync and i18n helpers
 Join the [UMC Discord server](https://discord.gg/d5qKvMp9Wc) to follow development, ask questions,
 and share integrations.
 
-- [Report an issue](https://github.com/FPS1024/UMC/issues)
-- [Contributing guide](https://fps1024.github.io/UMC/en/development/contributing)
+- [Report an issue](https://github.com/UMC-Community/UMC/issues)
+- [Contributing guide](https://umc-community.github.io/Docs/en/development/contributing)
 
 ## License
 

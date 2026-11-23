@@ -5,10 +5,6 @@
 /.venv/
 __pycache__/
 node_modules/
-/docs/.vitepress/cache/
-/docs/.vitepress/dist/
-/docs/en/reference/rpc-v1.md
-
 /services/auth/.env
 /services/auth/umc-auth
 /services/auth/umc-auth-image.tar.gz*
@@ -17,7 +13,6 @@ node_modules/
 !/services/auth/deploy/certs/.gitkeep
 /services/auth/deploy/acme/*
 !/services/auth/deploy/acme/.gitkeep
-/docs/en/reference/auth-v1.md
 /services/auth/deploy/mail/*
 !/services/auth/deploy/mail/.gitkeep
 /services/auth/web/dist/
