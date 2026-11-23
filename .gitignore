@@ -5,15 +5,3 @@
 /.venv/
 __pycache__/
 node_modules/
-/services/auth/.env
-/services/auth/umc-auth
-/services/auth/umc-auth-image.tar.gz*
-/services/auth/deploy/.env
-/services/auth/deploy/certs/*
-!/services/auth/deploy/certs/.gitkeep
-/services/auth/deploy/acme/*
-!/services/auth/deploy/acme/.gitkeep
-/services/auth/deploy/mail/*
-!/services/auth/deploy/mail/.gitkeep
-/services/auth/web/dist/
-/services/auth/web/node_modules/

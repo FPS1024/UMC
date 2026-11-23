@@ -5,7 +5,7 @@ launcher developers can run only the services they need.
 
 | Service | Status | Purpose |
 |---|---|---|
-| [`auth/`](./auth/) | Account system implemented | Self-hosted Go/Nginx/PostgreSQL accounts with `/api/v1`, a Vue panel, optional Stalwart mail, and Yggdrasil-compatible authentication |
+| [UMC-Auth](https://github.com/UMC-Community/UMC-Auth) | Account system implemented | Self-hosted Go/Nginx/PostgreSQL accounts with `/api/v1`, a Vue panel, optional Stalwart mail, and Yggdrasil-compatible authentication |
 | [`java-server/`](./java-server/) | Planned | Dockerized Minecraft: Java Edition server |
 | [`mirror/`](./mirror/) | Initial implementation | HTTPS-only Go object cache with SHA-1 verification |
 

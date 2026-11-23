@@ -118,15 +118,15 @@ Java provisioning, logs, and first-run details.
 
 ## Optional companion services
 
-UMC also ships independently deployable services under [`services/`](services/):
+The UMC-Community organization also maintains independently deployable services:
 
 | Service | Status | Purpose |
 |---|---|---|
-| [Auth server](services/auth/) | Account system implemented | Self-hosted Go/Nginx/PostgreSQL accounts with `/api/v1`, a Vue panel, optional Stalwart mail, and Yggdrasil-compatible authentication |
+| [UMC Auth](https://github.com/UMC-Community/UMC-Auth) | Account system implemented | Self-hosted Go/Nginx/PostgreSQL accounts with `/api/v1`, a Vue panel, optional Stalwart mail, and Yggdrasil-compatible authentication |
 | Java Edition server | Planned | Dockerized Minecraft: Java Edition server |
 | Mirror | Initial implementation | HTTPS-only Go cache with SHA-1 verification for configured upstream objects |
 
-The Auth and Mirror services currently have Docker Compose deployments. Auth runs behind Nginx with
+UMC Auth and Mirror have Docker Compose deployments. Auth runs behind Nginx with
 a private Go API and PostgreSQL; an optional Stalwart mail profile and a Vue user center/admin panel
 are included. The Java
 Edition server is planned and is not packaged yet. All companion services are optional; `umc` and
@@ -166,7 +166,7 @@ crates/
   umc-loader-forge   Forge Maven adapter
   umc-loader-neoforge NeoForge Maven adapter
   umc-loader-registry built-in and host adapters
-protocols/           canonical contracts: JSON-RPC and Auth API v1
+protocols/           canonical JSON-RPC contract
 ```
 
 </details>

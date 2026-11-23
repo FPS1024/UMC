@@ -1,5 +1,0 @@
-.env
-data/
-umc-auth
-*.log
-deploy/
