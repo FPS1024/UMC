@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>UMC documentation has moved</title>
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://umc-community.github.io/Docs/" />
+    <script>
+      ;(function () {
+        var path = location.pathname
+        var rest = path.indexOf('/UMC/') === 0 ? path.slice('/UMC'.length) : '/'
+        if (rest === '' || rest === '/index.html') rest = '/'
+        location.replace(
+          'https://umc-community.github.io/Docs' +
+            rest +
+            location.search +
+            location.hash,
+        )
+      })()
+    </script>
+  </head>
+  <body>
+    <p>
+      UMC documentation has moved to
+      <a href="https://umc-community.github.io/Docs/">https://umc-community.github.io/Docs/</a>.
+    </p>
+  </body>
+</html>
