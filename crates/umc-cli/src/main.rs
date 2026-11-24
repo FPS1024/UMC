@@ -121,29 +121,55 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 io::stdout().flush()?;
             }
         }
-        "version" if args.next().as_deref() == Some("list") => {
-            let core = UmcCore::new(data_dir);
-            let response = core
-                .dispatch(RpcRequest {
-                    jsonrpc: "2.0".into(),
-                    id: Some(serde_json::json!(1)),
-                    method: "version.list".into(),
-                    params: serde_json::Value::Null,
-                })
-                .await;
-            if let Some(err) = response.error {
-                return Err(err.message.into());
+        "version" | "--version" | "-V" => match args.next().as_deref() {
+            Some("list") => {
+                let core = UmcCore::new(data_dir);
+                let response = core
+                    .dispatch(RpcRequest {
+                        jsonrpc: "2.0".into(),
+                        id: Some(serde_json::json!(1)),
+                        method: "version.list".into(),
+                        params: serde_json::Value::Null,
+                    })
+                    .await;
+                if let Some(err) = response.error {
+                    return Err(err.message.into());
+                }
+                for item in response
+                    .result
+                    .unwrap_or_default()
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                {
+                    println!("{}", item["id"].as_str().unwrap_or("?"));
+                }
             }
-            for item in response
-                .result
-                .unwrap_or_default()
-                .as_array()
-                .into_iter()
-                .flatten()
-            {
-                println!("{}", item["id"].as_str().unwrap_or("?"));
+            Some(other) => {
+                return Err(format!("Unknown version subcommand: {other}").into());
             }
-        }
+            None => {
+                let core = UmcCore::new(data_dir);
+                let response = core
+                    .dispatch(RpcRequest {
+                        jsonrpc: "2.0".into(),
+                        id: Some(serde_json::json!(1)),
+                        method: "system.info".into(),
+                        params: serde_json::Value::Null,
+                    })
+                    .await;
+                if let Some(err) = response.error {
+                    return Err(err.message.into());
+                }
+                let info = response.result.unwrap_or_default();
+                println!(
+                    "UMC {}",
+                    info["version"]
+                        .as_str()
+                        .unwrap_or(env!("CARGO_PKG_VERSION"))
+                );
+            }
+        },
         "instance" => {
             let subcommand = args.next().unwrap_or_default();
             let params = match subcommand.as_str() {
@@ -498,7 +524,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         _ => println!(
-            "UMC — Universal Minecraft Core\n\nCommands:\n  umc version list\n  umc instance create <name> <version>\n  umc instance list|get|install|remove|repair <instance-id>\n  umc java detect [minimum-major]\n  umc java runtimes|install|remove ...\n  umc task get|cancel|events <task-id>\n  umc process list|status|stop ...\n  umc launch <instance-id> --offline <username>\n  umc launch <instance-id> --online [--account <account-id>]\n  umc auth login [--no-browser] [--redirect-uri <uri>]\n  umc auth status|accounts\n  umc auth refresh [--account <account-id>]\n  umc auth logout [--account <account-id>]\n  umc rpc --stdio\n  umcd  (start local IPC daemon)\n\nSet UMC_DATA_DIR to choose the data directory.\nSet UMC_CREDENTIAL_STORE=file to use the file credential backend."
+            "UMC — Universal Minecraft Core\n\nCommands:\n  umc version  (show the UMC core version)\n  umc version list\n  umc instance create <name> <version>\n  umc instance list|get|install|remove|repair <instance-id>\n  umc java detect [minimum-major]\n  umc java runtimes|install|remove ...\n  umc task get|cancel|events <task-id>\n  umc process list|status|stop ...\n  umc launch <instance-id> --offline <username>\n  umc launch <instance-id> --online [--account <account-id>]\n  umc auth login [--no-browser] [--redirect-uri <uri>]\n  umc auth status|accounts\n  umc auth refresh [--account <account-id>]\n  umc auth logout [--account <account-id>]\n  umc rpc --stdio\n  umcd  (start local IPC daemon)\n\nSet UMC_DATA_DIR to choose the data directory.\nSet UMC_CREDENTIAL_STORE=file to use the file credential backend."
         ),
     }
     Ok(())

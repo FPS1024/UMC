@@ -64,7 +64,7 @@ pub(super) async fn ensure_no_symlink(root: &Path, target: &Path) -> Result<(), 
 
 pub(super) fn http_client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
-        .user_agent("UMC/0.1.0")
+        .user_agent(concat!("UMC/", env!("CARGO_PKG_VERSION")))
         .connect_timeout(Duration::from_secs(15))
         .redirect(reqwest::redirect::Policy::custom(|attempt| {
             if attempt.url().scheme() == "https" {
