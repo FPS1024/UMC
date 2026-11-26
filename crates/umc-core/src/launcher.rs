@@ -161,6 +161,7 @@ mod embedded {
     use super::*;
     use std::ffi::CString;
     use std::os::raw::{c_char, c_int};
+    use std::path::Path;
 
     unsafe extern "C" {
         fn umc_jvm_create(
@@ -191,6 +192,51 @@ mod embedded {
         Some(unsafe { umc_jvm_main_status() })
     }
 
+    /// Applies mobile-oriented Minecraft defaults to the instance options.
+    ///
+    /// Menu blur and fancy graphics are very expensive with a software OpenGL
+    /// rasterizer; a 30 fps cap also keeps the CPU from being saturated.
+    fn apply_mobile_defaults(work_dir: &Path) {
+        const DEFAULTS: [(&str, &str); 7] = [
+            ("menuBackgroundBlurriness", "0.0"),
+            ("maxFps", "30"),
+            ("renderDistance", "4"),
+            ("graphicsMode", "0"),
+            ("particles", "2"),
+            ("ao", "false"),
+            ("entityShadows", "false"),
+        ];
+
+        let path = work_dir.join("options.txt");
+        let mut entries: Vec<(String, String)> = std::fs::read_to_string(&path)
+            .ok()
+            .map(|text| {
+                text.lines()
+                    .filter_map(|line| {
+                        line.split_once(':')
+                            .map(|(key, value)| (key.to_owned(), value.to_owned()))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        for (key, value) in DEFAULTS {
+            match entries.iter_mut().find(|(entry, _)| entry == key) {
+                Some(entry) => entry.1 = value.to_owned(),
+                None => entries.push((key.to_owned(), value.to_owned())),
+            }
+        }
+
+        let mut text = String::new();
+        for (key, value) in entries {
+            text.push_str(&key);
+            text.push(':');
+            text.push_str(&value);
+            text.push('\n');
+        }
+        let _ = std::fs::write(&path, text);
+    }
+
     pub fn start(spec: &JavaLaunchSpec, config: &EmbeddedConfig) -> Result<StartedJvm, String> {
         // Minecraft's log configuration writes to <game>/logs/latest.log
         // relative to the process working directory; create it before the log
@@ -200,6 +246,7 @@ mod embedded {
             .map_err(|e| format!("Could not create the game log directory: {e}"))?;
         std::env::set_current_dir(&spec.work_dir)
             .map_err(|e| format!("Could not enter the game directory: {e}"))?;
+        apply_mobile_defaults(&spec.work_dir);
 
         // SAFETY: no JVM may exist yet; the C API serializes creation itself.
         if unsafe { umc_jvm_is_created() } != 0 {

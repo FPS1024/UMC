@@ -304,8 +304,8 @@ pub extern "system" fn Java_dev_umc_mobile_jvmdemo_UmcCoreBridge_nativeInstallAn
                     java_path: None,
                     memory: Some(memory),
                     resolution: Some(umc_api::Resolution {
-                        width: 854,
-                        height: 480,
+                        width: 480,
+                        height: 270,
                     }),
                     fullscreen: false,
                     extra_jvm_args: vec![
