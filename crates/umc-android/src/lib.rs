@@ -4,9 +4,9 @@
 //! calls it from a background thread. All calls create a small Tokio runtime,
 //! run the async core operation and return JSON.
 
+use jni::JNIEnv;
 use jni::objects::{JClass, JObjectArray, JString};
 use jni::sys::{jint, jstring};
-use jni::JNIEnv;
 use std::net::ToSocketAddrs;
 use std::path::Path;
 use std::time::{Duration, Instant};
