@@ -192,6 +192,15 @@ mod embedded {
     }
 
     pub fn start(spec: &JavaLaunchSpec, config: &EmbeddedConfig) -> Result<StartedJvm, String> {
+        // Minecraft's log configuration writes to <game>/logs/latest.log
+        // relative to the process working directory; create it before the log
+        // system starts. Java's user.dir property alone is not enough because
+        // relative paths in native file opens follow the process cwd.
+        std::fs::create_dir_all(spec.work_dir.join("logs"))
+            .map_err(|e| format!("Could not create the game log directory: {e}"))?;
+        std::env::set_current_dir(&spec.work_dir)
+            .map_err(|e| format!("Could not enter the game directory: {e}"))?;
+
         // SAFETY: no JVM may exist yet; the C API serializes creation itself.
         if unsafe { umc_jvm_is_created() } != 0 {
             return Err("A JVM is already running in this process".into());
@@ -207,12 +216,16 @@ mod embedded {
             .map(|path| cstring(&path.to_string_lossy()))
             .transpose()?;
 
-        let options: Vec<CString> = spec
-            .jvm_args
-            .iter()
-            .filter(|arg| !is_heap_option(arg))
-            .map(|arg| cstring(arg))
-            .collect::<Result<_, _>>()?;
+        let options: Vec<CString> =
+            std::iter::once(format!("-Duser.dir={}", spec.work_dir.to_string_lossy()))
+                .chain(
+                    spec.jvm_args
+                        .iter()
+                        .filter(|arg| !is_heap_option(arg))
+                        .cloned(),
+                )
+                .map(|arg| cstring(&arg))
+                .collect::<Result<_, _>>()?;
         let option_ptrs: Vec<*const c_char> = options.iter().map(|arg| arg.as_ptr()).collect();
 
         let args: Vec<CString> = spec

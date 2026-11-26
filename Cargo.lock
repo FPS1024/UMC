@@ -2059,6 +2059,7 @@ dependencies = [
  "reqwest",
  "serde_json",
  "tokio",
+ "umc-api",
  "umc-core",
  "umc-sdk",
 ]

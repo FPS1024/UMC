@@ -217,3 +217,118 @@ pub extern "system" fn Java_dev_umc_mobile_jvmdemo_UmcCoreBridge_nativeEmbeddedL
         Err(error) => into_jstring(&mut env, &format!("ERROR: {error}")),
     }
 }
+
+/// Installs a vanilla Minecraft version (if needed) and launches it through the
+/// embedded JVM backend. Returns a short status string; the game keeps running
+/// on a detached JVM thread after this call returns.
+///
+/// `library_dir` is the APK native library directory that holds the
+/// Android-built LWJGL/GLFW/OSMesa/OpenAL libraries.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_dev_umc_mobile_jvmdemo_UmcCoreBridge_nativeInstallAndLaunch(
+    mut env: JNIEnv,
+    _class: JClass,
+    data_dir: JString,
+    version: JString,
+    username: JString,
+    java_home: JString,
+    spawn_helper: JString,
+    library_dir: JString,
+    cache_dir: JString,
+) -> jstring {
+    let result = (|| -> Result<String, String> {
+        let data_dir = read_jstring(&mut env, &data_dir)?;
+        let version = read_jstring(&mut env, &version)?;
+        let username = read_jstring(&mut env, &username)?;
+        let java_home = read_jstring(&mut env, &java_home)?;
+        let spawn_helper = read_jstring(&mut env, &spawn_helper)?;
+        let library_dir = read_jstring(&mut env, &library_dir)?;
+        let cache_dir = read_jstring(&mut env, &cache_dir)?;
+
+        // The engine picks the embedded backend from these variables.
+        // SAFETY: called before the game JVM starts, on a background thread.
+        unsafe {
+            std::env::set_var("UMC_EMBEDDED_JAVA_HOME", &java_home);
+            std::env::set_var("UMC_JSPAWNHELPER", &spawn_helper);
+        }
+
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .build()
+            .map_err(|e| format!("runtime: {e}"))?;
+
+        runtime.block_on(async move {
+            let launcher = umc_sdk::Launcher::builder()
+                .data_dir(&data_dir)
+                .build()
+                .await
+                .map_err(|e| format!("launcher: {e}"))?;
+
+            let memory = umc_api::MemoryConfig {
+                minimum_mib: 1024,
+                maximum_mib: 3072,
+            };
+
+            let instances = launcher.instances().await?;
+            let instance = match instances
+                .into_iter()
+                .find(|instance| instance.minecraft_version == version)
+            {
+                Some(instance) => instance,
+                None => {
+                    launcher
+                        .create_instance(umc_sdk::CreateInstanceRequest {
+                            name: format!("Android {version}"),
+                            minecraft_version: version.clone(),
+                            memory: Some(memory.clone()),
+                        })
+                        .await?
+                }
+            };
+
+            let handle = launcher
+                .install(umc_sdk::InstallRequest {
+                    instance_id: instance.id.clone(),
+                    timeout_seconds: Some(3600),
+                })
+                .await?;
+            launcher.wait_task(&handle.task_id).await?;
+
+            let process = launcher
+                .launch(umc_sdk::LaunchRequest {
+                    instance_id: instance.id.clone(),
+                    username,
+                    offline_mode: true,
+                    account_id: None,
+                    java_path: None,
+                    memory: Some(memory),
+                    resolution: Some(umc_api::Resolution {
+                        width: 854,
+                        height: 480,
+                    }),
+                    fullscreen: false,
+                    extra_jvm_args: vec![
+                        format!("-Dorg.lwjgl.librarypath={library_dir}"),
+                        format!("-Djna.boot.library.path={library_dir}"),
+                        "-Dorg.lwjgl.glfw.libname=libglfw.so".to_owned(),
+                        "-Dorg.lwjgl.opengl.libname=libOSMesa.so".to_owned(),
+                        "-Dorg.lwjgl.util.NoChecks=true".to_owned(),
+                        format!("-Djava.io.tmpdir={cache_dir}"),
+                    ],
+                    extra_game_args: Vec::new(),
+                })
+                .await?;
+
+            Ok(format!(
+                "launched instance={} process={} kind={:?} heap=3072MB",
+                instance.id, process.process_id, process.kind
+            ))
+        })
+    })();
+
+    match result {
+        Ok(value) => into_jstring(&mut env, &value),
+        Err(error) => into_jstring(&mut env, &format!("ERROR: {error}")),
+    }
+}
