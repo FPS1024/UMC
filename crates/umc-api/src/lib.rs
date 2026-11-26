@@ -156,11 +156,25 @@ pub struct AuthRefreshResult {
     pub minecraft_expires_in: Option<u64>,
 }
 
+/// How the game JVM runs.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProcessKind {
+    /// The JVM runs in its own operating-system process (desktop).
+    #[default]
+    Process,
+    /// The JVM is embedded in the launcher process (Android).
+    Embedded,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameProcess {
     pub process_id: String,
     pub instance_id: String,
+    /// Operating-system process id; 0 when the JVM is embedded.
     pub pid: u32,
+    #[serde(default)]
+    pub kind: ProcessKind,
     pub status: ProcessStatus,
     pub started_at: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]

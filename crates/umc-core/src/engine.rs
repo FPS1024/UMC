@@ -11,9 +11,11 @@ use std::{
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use umc_api::{
     GameProcess, INSTANCE_CONFIG_SCHEMA_VERSION, InstanceConfig, JavaRuntimeInfo,
-    JavaRuntimeInstallResult, MemoryConfig, ProcessStatus, RepairInstanceResult,
+    JavaRuntimeInstallResult, MemoryConfig, ProcessKind, ProcessStatus, RepairInstanceResult,
 };
 use uuid::Uuid;
+
+use crate::launcher::{self, JavaLaunchSpec, LaunchBackend, StartedJvm};
 
 const JAVA_RUNTIME_MANIFEST_URL: &str = "https://piston-meta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json";
 
@@ -693,11 +695,32 @@ pub async fn process_status(root: &Path, process_id: &str) -> Result<GameProcess
     if matches!(
         process.status,
         ProcessStatus::Running | ProcessStatus::Starting
-    ) && !process_matches(process.pid, &process.process_id)
-    {
-        process.status = ProcessStatus::Exited;
-        process.exit_code = None;
-        write_process_record(&path, &process)?;
+    ) {
+        if process.kind == ProcessKind::Embedded {
+            // An embedded JVM has no pid: its state comes from the C API.
+            match launcher::embedded_status() {
+                Some(launcher::MAIN_RUNNING) => {}
+                Some(launcher::MAIN_FINISHED) => {
+                    process.status = ProcessStatus::Exited;
+                    process.exit_code = Some(0);
+                    write_process_record(&path, &process)?;
+                }
+                Some(launcher::MAIN_FAILED) => {
+                    process.status = ProcessStatus::Failed;
+                    process.exit_code = Some(-1);
+                    write_process_record(&path, &process)?;
+                }
+                _ => {
+                    process.status = ProcessStatus::Exited;
+                    process.exit_code = None;
+                    write_process_record(&path, &process)?;
+                }
+            }
+        } else if !process_matches(process.pid, &process.process_id) {
+            process.status = ProcessStatus::Exited;
+            process.exit_code = None;
+            write_process_record(&path, &process)?;
+        }
     }
     Ok(process)
 }
@@ -738,6 +761,11 @@ pub async fn stop_process(root: &Path, process_id: &str) -> Result<(), String> {
         ProcessStatus::Running | ProcessStatus::Starting
     ) {
         return Err("Game process is not running".into());
+    }
+    if process.kind == ProcessKind::Embedded {
+        // The embedded JVM shares the launcher process; signalling it would
+        // kill the app. A dedicated shutdown hook is not available yet.
+        return Err("Stopping an embedded JVM is not supported yet".into());
     }
     if !process_matches(process.pid, process_id) {
         return Err(
@@ -1863,7 +1891,24 @@ pub async fn launch_vanilla(
         .as_u64()
         .unwrap_or(8) as u32;
     let component = metadata["javaVersion"]["component"].as_str();
-    let java = if let Some(path) = java_path {
+    let embedded = launcher::embedded_config();
+    let java = if let Some(config) = &embedded {
+        // No `java` executable exists in the app process; the embedded backend
+        // uses the JRE directory directly.
+        JavaRuntimeInfo {
+            path: config
+                .java_home
+                .join("bin")
+                .join("java")
+                .to_string_lossy()
+                .into_owned(),
+            major_version: 21,
+            vendor_version: "OpenJDK 21 (embedded)".into(),
+            compatible: 21 >= required,
+            required_major: required,
+            runtime_id: None,
+        }
+    } else if let Some(path) = java_path {
         detect_java(Some(path), required)?
     } else {
         let managed = list_java_runtimes(root).await?.into_iter().find(|runtime| {
@@ -1904,7 +1949,7 @@ pub async fn launch_vanilla(
             ":"
         });
     let assets = root.join("assets");
-    let mut command = Command::new(&java.path);
+    let mut jvm_args: Vec<String> = Vec::new();
     let memory = memory_override.as_ref().unwrap_or(&cfg.memory);
     if memory.minimum_mib == 0
         || memory.maximum_mib < memory.minimum_mib
@@ -1919,9 +1964,8 @@ pub async fn launch_vanilla(
     launch_features.insert("is_demo_user", false);
     launch_features.insert("has_custom_resolution", resolution.is_some());
     launch_features.insert("has_quick_plays_support", false);
-    command
-        .arg(format!("-Xms{}M", memory.minimum_mib))
-        .arg(format!("-Xmx{}M", memory.maximum_mib));
+    jvm_args.push(format!("-Xms{}M", memory.minimum_mib));
+    jvm_args.push(format!("-Xmx{}M", memory.maximum_mib));
     if extra_jvm_args
         .iter()
         .chain(extra_game_args)
@@ -1930,10 +1974,10 @@ pub async fn launch_vanilla(
         return Err("Launch arguments may not contain NUL bytes".into());
     }
     let process_id = Uuid::new_v4().to_string();
-    command.args(extra_jvm_args);
-    command.arg(format!("-Dumc.process_id={process_id}"));
+    jvm_args.extend(extra_jvm_args.iter().cloned());
+    jvm_args.push(format!("-Dumc.process_id={process_id}"));
     let native_dir = root.join("natives").join(&cfg.minecraft_version);
-    command.arg(format!("-Djava.library.path={}", native_dir.display()));
+    jvm_args.push(format!("-Djava.library.path={}", native_dir.display()));
     if let Some(jvm) = metadata["arguments"]["jvm"].as_array() {
         let mut flattened = Vec::new();
         for item in jvm {
@@ -1967,15 +2011,14 @@ pub async fn launch_vanilla(
                 .replace("${version_name}", &cfg.minecraft_version)
                 .replace("${path}", state["log_config"].as_str().unwrap_or(""));
             if !arg.contains("${") {
-                command.arg(arg);
+                jvm_args.push(arg);
             }
         }
     }
-    command.arg("-cp").arg(&cp).arg(
-        metadata["mainClass"]
-            .as_str()
-            .ok_or("Missing Minecraft main class")?,
-    );
+    let main_class = metadata["mainClass"]
+        .as_str()
+        .ok_or("Missing Minecraft main class")?
+        .to_owned();
     let token_uuid = identity.uuid.clone();
     let auth_session = if identity.access_token == "offline" {
         "token:offline:00000000-0000-0000-0000-000000000000".to_owned()
@@ -2106,26 +2149,30 @@ pub async fn launch_vanilla(
     tokio::fs::create_dir_all(&log_dir)
         .await
         .map_err(|e| e.to_string())?;
-    let console_log = File::options()
-        .create(true)
-        .append(true)
-        .open(log_dir.join("umc-console.log"))
-        .map_err(|e| e.to_string())?;
-    let console_error = console_log.try_clone().map_err(|e| e.to_string())?;
-    command
-        .args(game_args)
-        .current_dir(&game_dir)
-        .stdin(Stdio::null())
-        .stdout(Stdio::from(console_log))
-        .stderr(Stdio::from(console_error));
-    let child = command
-        .spawn()
-        .map_err(|e| format!("Could not start Minecraft: {e}"))?;
-    let pid = child.id();
+    let spec = JavaLaunchSpec {
+        java: PathBuf::from(&java.path),
+        class_path: cp,
+        main_class,
+        jvm_args,
+        game_args,
+        work_dir: game_dir,
+        console_log: log_dir.join("umc-console.log"),
+        backend: match &embedded {
+            Some(config) => LaunchBackend::Embedded(config.clone()),
+            None => LaunchBackend::Process,
+        },
+    };
+    let started = launcher::start(&spec)?;
+    let embedded_process = started.is_embedded();
     let process = GameProcess {
         process_id,
         instance_id: id.into(),
-        pid,
+        pid: started.pid(),
+        kind: if embedded_process {
+            ProcessKind::Embedded
+        } else {
+            ProcessKind::Process
+        },
         status: ProcessStatus::Running,
         exit_code: None,
         started_at: timestamp_rfc3339(),
@@ -2140,23 +2187,50 @@ pub async fn launch_vanilla(
     write_process_record(&process_file, &process)?;
     let process_for_monitor = process.clone();
     std::thread::spawn(move || {
-        let mut child = child;
         let mut state = process_for_monitor;
-        loop {
-            match child.try_wait() {
-                Ok(Some(status)) => {
-                    state.status = ProcessStatus::Exited;
-                    state.exit_code = status.code();
-                    let _ = write_process_record(&process_file, &state);
-                    break;
+        match started {
+            StartedJvm::Child(mut child) => loop {
+                match child.try_wait() {
+                    Ok(Some(status)) => {
+                        state.status = ProcessStatus::Exited;
+                        state.exit_code = status.code();
+                        let _ = write_process_record(&process_file, &state);
+                        break;
+                    }
+                    Err(_) => {
+                        state.status = ProcessStatus::Failed;
+                        let _ = write_process_record(&process_file, &state);
+                        break;
+                    }
+                    Ok(None) => std::thread::sleep(std::time::Duration::from_millis(400)),
                 }
-                Err(_) => {
-                    state.status = ProcessStatus::Failed;
-                    let _ = write_process_record(&process_file, &state);
-                    break;
+            },
+            StartedJvm::Embedded => loop {
+                match launcher::embedded_status() {
+                    Some(launcher::MAIN_RUNNING) => {
+                        std::thread::sleep(std::time::Duration::from_millis(400));
+                    }
+                    Some(launcher::MAIN_FINISHED) => {
+                        state.status = ProcessStatus::Exited;
+                        state.exit_code = Some(0);
+                        let _ = write_process_record(&process_file, &state);
+                        break;
+                    }
+                    Some(launcher::MAIN_FAILED) => {
+                        state.status = ProcessStatus::Failed;
+                        state.exit_code = Some(-1);
+                        let _ = write_process_record(&process_file, &state);
+                        break;
+                    }
+                    // The JVM is gone (e.g. the host process restarted).
+                    _ => {
+                        state.status = ProcessStatus::Exited;
+                        state.exit_code = None;
+                        let _ = write_process_record(&process_file, &state);
+                        break;
+                    }
                 }
-                Ok(None) => std::thread::sleep(std::time::Duration::from_millis(400)),
-            }
+            },
         }
     });
     Ok(process)
@@ -2357,6 +2431,7 @@ mod tests {
             process_id: "running".into(),
             instance_id: id.into(),
             pid: 123,
+            kind: ProcessKind::Process,
             status: ProcessStatus::Running,
             started_at: "2026-01-01T00:00:00Z".into(),
             exit_code: None,

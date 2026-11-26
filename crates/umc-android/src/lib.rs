@@ -4,11 +4,12 @@
 //! calls it from a background thread. All calls create a small Tokio runtime,
 //! run the async core operation and return JSON.
 
-use jni::objects::{JClass, JString};
+use jni::objects::{JClass, JObjectArray, JString};
 use jni::sys::{jint, jstring};
 use jni::JNIEnv;
 use std::net::ToSocketAddrs;
-use std::time::Duration;
+use std::path::Path;
+use std::time::{Duration, Instant};
 
 fn into_jstring(env: &mut JNIEnv, value: &str) -> jstring {
     match env.new_string(value) {
@@ -144,5 +145,75 @@ pub extern "system" fn Java_dev_umc_mobile_jvmdemo_UmcCoreBridge_nativeHttpGet(
     match result {
         Ok(v) => into_jstring(&mut env, &v),
         Err(e) => into_jstring(&mut env, &format!("ERROR: {e}")),
+    }
+}
+
+fn read_jstring(env: &mut JNIEnv, value: &JString) -> Result<String, String> {
+    env.get_string(value)
+        .map(|s| s.into())
+        .map_err(|e| e.to_string())
+}
+
+/// Diagnostic binding for the embedded launch backend: starts a JVM through
+/// `umc-core`'s launch abstraction (`umc_jvm_create` / `umc_jvm_start_main`),
+/// waits for `main` to finish and reports the status.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_dev_umc_mobile_jvmdemo_UmcCoreBridge_nativeEmbeddedLaunch(
+    mut env: JNIEnv,
+    _class: JClass,
+    java_home: JString,
+    spawn_helper: JString,
+    class_path: JString,
+    main_class: JString,
+    log_path: JString,
+    options: JObjectArray,
+) -> jstring {
+    let result = (|| -> Result<String, String> {
+        let java_home = read_jstring(&mut env, &java_home)?;
+        let spawn_helper = read_jstring(&mut env, &spawn_helper)?;
+        let class_path = read_jstring(&mut env, &class_path)?;
+        let main_class = read_jstring(&mut env, &main_class)?;
+        let log_path = read_jstring(&mut env, &log_path)?;
+
+        let mut jvm_args = vec!["-Xmx256M".to_owned()];
+        let count = env.get_array_length(&options).map_err(|e| e.to_string())?;
+        for index in 0..count {
+            let item = env
+                .get_object_array_element(&options, index)
+                .map_err(|e| e.to_string())?;
+            let item = JString::from(item);
+            jvm_args.push(read_jstring(&mut env, &item)?);
+        }
+
+        let spawn_helper = (!spawn_helper.is_empty()).then(|| Path::new(&spawn_helper));
+        umc_core::start_embedded_jvm(
+            Path::new(&java_home),
+            spawn_helper,
+            &class_path,
+            &main_class,
+            jvm_args,
+            Vec::new(),
+            Path::new(&log_path),
+        )?;
+
+        let deadline = Instant::now() + Duration::from_secs(15);
+        loop {
+            match umc_core::embedded_status() {
+                Some(1) => return Ok("status=1".into()),
+                Some(2) => return Err("main failed".into()),
+                Some(status) if status == 0 || status == -1 => {
+                    if Instant::now() >= deadline {
+                        return Err("timed out waiting for main".into());
+                    }
+                    std::thread::sleep(Duration::from_millis(100));
+                }
+                other => return Err(format!("unexpected status {other:?}")),
+            }
+        }
+    })();
+
+    match result {
+        Ok(value) => into_jstring(&mut env, &value),
+        Err(error) => into_jstring(&mut env, &format!("ERROR: {error}")),
     }
 }

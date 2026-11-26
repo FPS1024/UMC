@@ -14,7 +14,9 @@ pub mod auth;
 mod credentials;
 mod daemon;
 mod engine;
+mod launcher;
 mod tasks;
+pub use launcher::{embedded_status, shutdown_embedded, start_embedded_jvm};
 use tasks::TaskManager;
 
 pub async fn serve_local_daemon(core: UmcCore) -> std::io::Result<()> {

@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
+#[cfg(not(target_os = "android"))]
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
